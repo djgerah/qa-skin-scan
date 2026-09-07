@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public record User(String login, String password, String email, String phone) {
 
-    public static User random() {
+    public static User getRandomUser() {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         return new User("user_" + suffix, suffix + "_password", suffix + "@skin-scan.ru", getRandomPhone());
     }

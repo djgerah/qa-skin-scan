@@ -6,10 +6,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import qa.startup.skinscan.clients.UserClient;
-import qa.startup.skinscan.config.TestConfig;
 import qa.startup.skinscan.models.User;
 import qa.startup.skinscan.models.UserRequest;
-import static qa.startup.skinscan.models.User.random;
+import static qa.startup.skinscan.models.User.getRandomUser;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
@@ -21,7 +20,7 @@ class UserApiTest {
 
     @BeforeAll
     static void setUp() {
-        RestAssured.baseURI = TestConfig.BASE_URL;
+        RestAssured.baseURI = "http://localhost:8080";
     }
 
     @Test
@@ -41,7 +40,7 @@ class UserApiTest {
     @Test
     @DisplayName("Обновление данных без авторизации: 401")
     void updateUserDataWithoutAuthReturns401() {
-        var user = random();
+        var user = getRandomUser();
 
         RestAssured.given()
                 .contentType(io.restassured.http.ContentType.JSON)
@@ -55,7 +54,7 @@ class UserApiTest {
     @Test
     @DisplayName("Обновление данных с неверным паролем: 401")
     void updateUserDataWithWrongPasswordReturns401() {
-        var user = random();
+        var user = getRandomUser();
 
         RestAssured.given()
                 .header("Authorization", "Basic " + java.util.Base64.getEncoder()

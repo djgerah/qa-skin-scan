@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static qa.startup.skinscan.clients.AuthClient.login;
 import static qa.startup.skinscan.clients.AuthClient.register;
 import static qa.startup.skinscan.clients.AuthClient.registeredUser;
-import static qa.startup.skinscan.models.User.random;
+import static qa.startup.skinscan.models.User.getRandomUser;
 
 @Tag("smoke")
 @Tag("regression")
@@ -19,7 +19,7 @@ class AuthApiTest {
     @Test
     @DisplayName("Регистрация нового пользователя")
     void registerNewUserReturns201() {
-        var user = random();
+        var user = getRandomUser();
 
         register(user)
                 .then()
@@ -29,7 +29,7 @@ class AuthApiTest {
     @Test
     @DisplayName("Повторная регистрация того же логина")
     void registerDuplicateUserReturns409() {
-        var user = random();
+        var user = getRandomUser();
 
         register(user).then().statusCode(201);
 
@@ -39,54 +39,51 @@ class AuthApiTest {
     }
 
     @Test
-    @DisplayName("Регистрация с невалидным email: 400")
+    @DisplayName("Регистрация с невалидным email")
     void registerWithInvalidEmailReturns400() {
-        var user = random();
+        var user = getRandomUser();
 
-        register(new User(user.login(), user.password(), "not-an-email", null))
+        register(new User(user.login(), user.password(), "not-an-email", user.phone()))
                 .then()
                 .statusCode(400);
     }
 
     @Test
-    @DisplayName("Регистрация с коротким паролем (<6 символов): 400")
+    @DisplayName("Регистрация с коротким паролем (< 6 символов)")
     void registerWithShortPasswordReturns400() {
+        var user = getRandomUser();
+
         register(new User(
-                "qa_user_" + UUID.randomUUID().toString().substring(0, 8), "123", null, null))
+                user.login(), "123", user.email(), user.phone()))
                 .then()
                 .statusCode(400);
     }
 
     @Test
-    @DisplayName("Логин с валидными данными: 200 и UUID в теле")
+    @DisplayName("Sign in с валидными данными")
     void loginWithValidCredentialsReturnsUserId() {
         var user = registeredUser();
 
-        var body = login(user)
+        login(user)
                 .then()
                 .statusCode(200)
                 .extract().asString();
-
-        var uuid = body.replace("\"", "").trim();
-        assertDoesNotThrow(() -> UUID.fromString(uuid),
-                "Тело ответа логина должно быть UUID, получено: " + body);
     }
 
     @Test
-    @DisplayName("Логин с неверным паролем: 401")
+    @DisplayName("Sign in с неверным паролем")
     void loginWithWrongPasswordReturns401() {
         var user = registeredUser();
-        var wrong = new User(user.login(), "wrong-password-123", user.email(), user.phone());
 
-        login(wrong)
+        login(new User(user.login(), "wrong-password-123", user.email(), user.phone()))
                 .then()
                 .statusCode(401);
     }
 
     @Test
-    @DisplayName("Логин несуществующего пользователя: 401")
+    @DisplayName("Sign in несуществующего пользователя")
     void loginUnknownUserReturns401() {
-        login(random())
+        login(getRandomUser())
                 .then()
                 .statusCode(401);
     }

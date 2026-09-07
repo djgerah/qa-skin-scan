@@ -7,7 +7,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import qa.startup.skinscan.config.TestConfig;
 import qa.startup.skinscan.models.User;
 
 import java.time.Duration;
@@ -27,7 +26,7 @@ class PhotoApiTest {
 
     @BeforeAll
     static void setUp() {
-        RestAssured.baseURI = TestConfig.BASE_URL;
+        RestAssured.baseURI = "http://localhost:8080";
     }
 
     private static void awaitAnalyzed(User user, String photoId) {
