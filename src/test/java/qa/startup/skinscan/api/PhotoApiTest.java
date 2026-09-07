@@ -7,16 +7,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import qa.startup.skinscan.clients.PhotoClient;
-import qa.startup.skinscan.models.TestUser;
+import qa.startup.skinscan.config.TestConfig;
+import qa.startup.skinscan.models.User;
 
 import java.time.Duration;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.notNullValue;
-import static qa.startup.skinscan.config.TestConfig.baseUrl;
-import static qa.startup.skinscan.clients.AuthClient.createRandomUser;
+import static qa.startup.skinscan.clients.AuthClient.registeredUser;
 import static qa.startup.skinscan.clients.PhotoClient.PNG_1X1;
 import static qa.startup.skinscan.clients.PhotoClient.getById;
 import static qa.startup.skinscan.clients.PhotoClient.getByName;
@@ -28,10 +27,10 @@ class PhotoApiTest {
 
     @BeforeAll
     static void setUp() {
-        RestAssured.baseURI = baseUrl();
+        RestAssured.baseURI = TestConfig.BASE_URL;
     }
 
-    private static void awaitAnalyzed(TestUser user, String photoId) {
+    private static void awaitAnalyzed(User user, String photoId) {
         Awaitility.await()
                 .atMost(Duration.ofSeconds(30))
                 .pollInterval(Duration.ofSeconds(1))
@@ -41,7 +40,7 @@ class PhotoApiTest {
     @Test
     @DisplayName("Загрузка фото: 202 и photoId в ответе")
     void uploadPhotoReturns202WithId() {
-        var user = createRandomUser();
+        var user = registeredUser();
 
         upload(user, uniquePhotoName(), PNG_1X1, "image/png")
                 .then()
@@ -62,7 +61,7 @@ class PhotoApiTest {
     @Test
     @DisplayName("После обработки фото по id: 200, size_file и processing_time присутствуют")
     void getPhotoByIdAfterAnalysisReturns200WithMetadata() {
-        var user = createRandomUser();
+        var user = registeredUser();
         String fileName = uniquePhotoName();
 
         Response upload = upload(user, fileName, PNG_1X1, "image/png");
@@ -81,7 +80,7 @@ class PhotoApiTest {
     @Test
     @DisplayName("Получение фото по имени: 200")
     void getPhotoByNameAfterAnalysisReturns200() {
-        var user = createRandomUser();
+        var user = registeredUser();
         String fileName = uniquePhotoName();
 
         Response upload = upload(user, fileName, PNG_1X1, "image/png");
@@ -96,7 +95,7 @@ class PhotoApiTest {
     @Test
     @DisplayName("Получение фото по несуществующему имени: 404")
     void getPhotoByUnknownNameReturns404() {
-        var user = createRandomUser();
+        var user = registeredUser();
 
         getByName(user, "no_such_file_" + UUID.randomUUID() + ".png")
                 .then()
@@ -106,7 +105,7 @@ class PhotoApiTest {
     @Test
     @DisplayName("Получение фото по несуществующему id: 404")
     void getPhotoByUnknownIdReturns404() {
-        var user = createRandomUser();
+        var user = registeredUser();
 
         getById(user, UUID.randomUUID().toString())
                 .then()
@@ -116,8 +115,8 @@ class PhotoApiTest {
     @Test
     @DisplayName("Чужой пользователь не имеет доступа к фото: 403")
     void otherUserCannotAccessPhotoReturns403() {
-        var owner = createRandomUser();
-        var stranger = createRandomUser();
+        var owner = registeredUser();
+        var stranger = registeredUser();
 
         Response upload = upload(owner, uniquePhotoName(), PNG_1X1, "image/png");
         upload.then().statusCode(202);

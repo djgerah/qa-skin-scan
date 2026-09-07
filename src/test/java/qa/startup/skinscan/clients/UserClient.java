@@ -4,7 +4,7 @@ import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import qa.startup.skinscan.config.TestConfig;
 import qa.startup.skinscan.models.PasswordUpdateRequest;
-import qa.startup.skinscan.models.TestUser;
+import qa.startup.skinscan.models.User;
 import qa.startup.skinscan.models.UserRequest;
 
 import static io.restassured.RestAssured.given;
@@ -17,8 +17,8 @@ public final class UserClient {
     private UserClient() {
     }
 
-    public static Response update(TestUser user, UserRequest request) {
-        return given().baseUri(TestConfig.baseUrl())
+    public static Response update(User user, UserRequest request) {
+        return given().baseUri(TestConfig.BASE_URL)
                 .header("Authorization", user.basicAuth())
                 .contentType(ContentType.JSON)
                 .body(request)
@@ -26,8 +26,8 @@ public final class UserClient {
                 .put("/skinScan/user/update");
     }
 
-    public static Response updatePassword(TestUser user, String oldPassword, String newPassword) {
-        return given().baseUri(TestConfig.baseUrl())
+    public static Response updatePassword(User user, String oldPassword, String newPassword) {
+        return given().baseUri(TestConfig.BASE_URL)
                 .header("Authorization", user.basicAuth())
                 .contentType(ContentType.JSON)
                 .body(new PasswordUpdateRequest(newPassword, oldPassword))

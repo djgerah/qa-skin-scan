@@ -3,15 +3,21 @@ package qa.startup.skinscan.models;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Учётные данные тестового пользователя.
  */
-public record TestUser(String login, String password) {
+public record User(String login, String password, String email, String phone) {
 
-    public static TestUser random() {
+    public static User random() {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
-        return new TestUser("qa_user_" + suffix, "Qa_" + suffix + "_Pass");
+        return new User("user_" + suffix, suffix + "_password", suffix + "@skin-scan.ru", getRandomPhone());
+    }
+
+    private static String getRandomPhone() {
+        long number = ThreadLocalRandom.current().nextLong(900_000_0000L, 1_000_000_0000L);
+        return "+7" + number;
     }
 
     public String basicAuth() {

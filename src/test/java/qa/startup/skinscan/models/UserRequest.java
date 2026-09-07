@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record UserRequest(String login, String password, String email, String phone) {
 
-    public static UserRequest of(TestUser user) {
-        return new UserRequest(user.login(), user.password(), null, null);
+    public static UserRequest of(User user) {
+        return new UserRequest(user.login(), user.password(), user.email(), user.phone());
     }
 }

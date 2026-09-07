@@ -5,12 +5,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import qa.startup.skinscan.config.TestConfig;
 
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
-import static qa.startup.skinscan.config.TestConfig.baseUrl;
 
 @Tag("regression")
 class RateLimitApiTest {
@@ -20,7 +20,7 @@ class RateLimitApiTest {
 
     @BeforeAll
     static void setUp() {
-        RestAssured.baseURI = baseUrl();
+        RestAssured.baseURI = TestConfig.BASE_URL;
     }
 
     private static io.restassured.specification.RequestSpecification givenAsUniqueClient() {

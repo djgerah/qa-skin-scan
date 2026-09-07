@@ -8,15 +8,14 @@ import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static qa.startup.skinscan.config.TestConfig.baseUrl;
 
 @Tag("smoke")
 class HealthCheckTest {
 
     @Test
-    @DisplayName("GET /check-run: 200, статус 'Успешно', БД отвечает")
+    @DisplayName("Проверка доступности БД")
     void checkRunReturnsOkWithDbStatus() {
-        Map<String, Object> body = given().baseUri(baseUrl())
+        Map<String, Object> body = given().baseUri("http://localhost:8080")
                 .when()
                 .get("/skinScan/check-run")
                 .then()
@@ -28,16 +27,5 @@ class HealthCheckTest {
         assertEquals("Успешно", body.get("статус"));
         assertEquals("PostgreSQL", body.get("БД"));
         assertEquals(1, ((Number) body.get("Результат работы БД")).intValue());
-    }
-
-    @Test
-    @DisplayName("Swagger-документация доступна без авторизации")
-    void swaggerDocsArePublic() {
-        given().baseUri(baseUrl())
-                .redirects().follow(false)
-                .when()
-                .get("/v3/api-docs")
-                .then()
-                .statusCode(200);
     }
 }

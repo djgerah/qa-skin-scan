@@ -4,12 +4,8 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import qa.startup.skinscan.clients.AuthClient;
-import qa.startup.skinscan.clients.PhotoClient;
 import qa.startup.skinscan.clients.UserClient;
 import qa.startup.skinscan.config.Db;
-import qa.startup.skinscan.models.TestUser;
-import qa.startup.skinscan.models.UserRequest;
 
 import java.time.Duration;
 import java.util.UUID;
@@ -18,12 +14,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static qa.startup.skinscan.clients.AuthClient.createRandomUser;
 import static qa.startup.skinscan.clients.AuthClient.loginAndGetUserId;
 import static qa.startup.skinscan.clients.AuthClient.register;
+import static qa.startup.skinscan.clients.AuthClient.registeredUser;
 import static qa.startup.skinscan.clients.PhotoClient.PNG_1X1;
 import static qa.startup.skinscan.clients.PhotoClient.uniquePhotoName;
 import static qa.startup.skinscan.clients.PhotoClient.upload;
+import static qa.startup.skinscan.models.User.random;
 
 /**
  * Верификация на уровне БД: проверяем не только HTTP-ответы API,
@@ -39,11 +36,11 @@ class DbVerificationTest {
     @Test
     @DisplayName("Регистрация через API создаёт запись в users с BCrypt-хэшем пароля")
     void registerCreatesUserRowWithBcryptHash() {
-        var user = TestUser.random();
-        String email = "qa_" + UUID.randomUUID() + "@test.local";
-        String phone = "+70000000001";
+        var user = random();
+//        String email = "qa_" + UUID.randomUUID() + "@test.local";
+//        String phone = "+70000000001";
 
-        register(new UserRequest(user.login(), user.password(), email, phone))
+        register(user)
                 .then()
                 .statusCode(201);
 
@@ -60,9 +57,9 @@ class DbVerificationTest {
                 assertNotEquals(user.password(), storedHash,
                         "Пароль не должен храниться в открытом виде");
 
-                assertEquals(email, rs.getString("email"),
+                assertEquals(user.email(), rs.getString("email"),
                         "email, переданный при регистрации, должен быть сохранён");
-                assertEquals(phone, rs.getString("phone"));
+                assertEquals(user.phone(), rs.getString("phone"));
                 assertNotNull(rs.getTimestamp("created_at"), "created_at должен быть заполнен");
             }
         } catch (Exception e) {
@@ -73,7 +70,7 @@ class DbVerificationTest {
     @Test
     @DisplayName("Смена пароля через API обновляет BCrypt-хэш в users")
     void passwordChangeUpdatesHashInDb() {
-        var user = createRandomUser();
+        var user = registeredUser();
 
         String hashBefore = (String) Db.queryValue(
                 "SELECT password FROM users WHERE login = ?", user.login()).orElseThrow();
@@ -92,7 +89,7 @@ class DbVerificationTest {
     @Test
     @DisplayName("Загрузка фото создаёт запись в photo, а после анализа — запись в analysis со статусом 'Анализ завершен'")
     void photoUploadAndAnalysisPersistedInDb() {
-        var user = createRandomUser();
+        var user = registeredUser();
         String userId = loginAndGetUserId(user);
         String fileName = uniquePhotoName();
 
