@@ -5,9 +5,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import qa.startup.skinscan.models.User;
 
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static qa.startup.skinscan.clients.AuthClient.login;
 import static qa.startup.skinscan.clients.AuthClient.register;
 import static qa.startup.skinscan.clients.AuthClient.registeredUser;

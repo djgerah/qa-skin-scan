@@ -13,8 +13,8 @@ import static io.restassured.RestAssured.given;
  */
 public final class UserClient {
 
-    private UserClient() {
-    }
+//    private UserClient() {
+//    }
 
     public static Response update(User user, UserRequest request) {
         return given().baseUri("http://localhost:8080")

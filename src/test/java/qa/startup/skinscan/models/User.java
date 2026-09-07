@@ -15,7 +15,7 @@ public record User(String login, String password, String email, String phone) {
         return new User("user_" + suffix, suffix + "_password", suffix + "@skin-scan.ru", getRandomPhone());
     }
 
-    private static String getRandomPhone() {
+    public static String getRandomPhone() {
         long number = ThreadLocalRandom.current().nextLong(900_000_0000L, 1_000_000_0000L);
         return "+7" + number;
     }

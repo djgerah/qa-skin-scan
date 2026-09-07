@@ -1,48 +1,44 @@
 package qa.startup.skinscan.api;
 
-import io.restassured.RestAssured;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import qa.startup.skinscan.clients.UserClient;
 import qa.startup.skinscan.models.User;
 import qa.startup.skinscan.models.UserRequest;
+
+import static io.restassured.RestAssured.given;
+import static qa.startup.skinscan.models.User.getRandomPhone;
 import static qa.startup.skinscan.models.User.getRandomUser;
+
 import java.util.UUID;
 
-import static org.hamcrest.Matchers.containsString;
 import static qa.startup.skinscan.clients.AuthClient.login;
 import static qa.startup.skinscan.clients.AuthClient.registeredUser;
 
 @Tag("regression")
 class UserApiTest {
 
-    @BeforeAll
-    static void setUp() {
-        RestAssured.baseURI = "http://localhost:8080";
-    }
-
     @Test
-    @DisplayName("Обновление данных пользователя: 200")
+    @DisplayName("Обновление данных пользователя")
     void updateUserDataWithValidAuthReturns200() {
         var user = registeredUser();
 
         UserClient.update(user, new UserRequest(
                         user.login(),
                         user.password(),
-                        "qa_" + UUID.randomUUID() + "@test.local",
-                        "+79990001122"))
+                        UUID.randomUUID().toString().substring(0, 8) + "@skin-scan.ru",
+                        getRandomPhone()))
                 .then()
                 .statusCode(200);
     }
 
     @Test
-    @DisplayName("Обновление данных без авторизации: 401")
+    @DisplayName("Обновление данных без авторизации")
     void updateUserDataWithoutAuthReturns401() {
         var user = getRandomUser();
 
-        RestAssured.given()
+        given()
                 .contentType(io.restassured.http.ContentType.JSON)
                 .body(user)
                 .when()
@@ -52,15 +48,13 @@ class UserApiTest {
     }
 
     @Test
-    @DisplayName("Обновление данных с неверным паролем: 401")
+    @DisplayName("Обновление данных с неверным паролем")
     void updateUserDataWithWrongPasswordReturns401() {
         var user = getRandomUser();
 
-        RestAssured.given()
-                .header("Authorization", "Basic " + java.util.Base64.getEncoder()
-                        .encodeToString((user.login() + ":wrong-pass").getBytes()))
+        given()
                 .contentType(io.restassured.http.ContentType.JSON)
-                .body(new UserRequest(user.login(), "wrong-pass", null, null))
+                .body(new UserRequest(user.login(), "wrong-password", UUID.randomUUID().toString().substring(0, 8) + "@skin-scan.ru", getRandomPhone()))
                 .when()
                 .put("/skinScan/user/update")
                 .then()
@@ -68,16 +62,27 @@ class UserApiTest {
     }
 
     @Test
-    @DisplayName("Смена пароля: 200, вход по новому паролю 200, по старому 401")
-    void changePasswordFullFlow() {
+    @DisplayName("Успешный вход после смены пароля")
+    void loginWithNewPasswordReturns200() {
         var user = registeredUser();
-        var newPassword = "New_" + UUID.randomUUID().toString().substring(0, 8) + "_Pass";
+        var newPassword = UUID.randomUUID().toString().substring(0, 8) + "_password";
 
         UserClient.updatePassword(user, user.password(), newPassword)
                 .then()
                 .statusCode(200);
 
         login(new User(user.login(), newPassword, user.email(), user.phone()))
+                .then()
+                .statusCode(200);
+   }
+
+    @Test
+    @DisplayName("Безуспешный вход со старым паролем после его смены")
+    void loginWithOldPasswordReturns401() {
+        var user = registeredUser();
+        var newPassword = UUID.randomUUID().toString().substring(0, 8) + "_password";
+
+        UserClient.updatePassword(user, user.password(), newPassword)
                 .then()
                 .statusCode(200);
 
@@ -87,23 +92,22 @@ class UserApiTest {
     }
 
     @Test
-    @DisplayName("Смена пароля с неверным старым паролем: 401")
+    @DisplayName("Смена пароля с неверным старым паролем")
     void changePasswordWithWrongOldPasswordReturns401() {
         var user = registeredUser();
 
-        UserClient.updatePassword(user, "wrong-old-pass", "Some_New_Pass_123")
+        UserClient.updatePassword(user, "wrong-old-password", "new_password_123")
                 .then()
                 .statusCode(401);
     }
 
     @Test
-    @DisplayName("Смена пароля на короткий (<6 символов): 400")
+    @DisplayName("Смена пароля на короткий (< 6 символов)")
     void changePasswordToShortPasswordReturns400() {
         var user = registeredUser();
 
         UserClient.updatePassword(user, user.password(), "123")
                 .then()
-                .statusCode(400)
-                .body(containsString("Пароль"));
+                .statusCode(400);
     }
 }

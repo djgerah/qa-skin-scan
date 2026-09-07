@@ -5,7 +5,6 @@ import io.restassured.response.Response;
 import qa.startup.skinscan.models.User;
 import qa.startup.skinscan.models.UserRequest;
 
-import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.restassured.RestAssured.given;
