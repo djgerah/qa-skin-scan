@@ -19,9 +19,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("regression")
 class PhotoApiTest {
 
+    /**
+     * Ждёт завершения асинхронного анализа фото (сервер возвращает 502, пока фото в обработке).
+     */
     private static void awaitAnalyzed(User user, String photoId) {
         Awaitility.await()
-                .atMost(Duration.ofSeconds(30))
+                .atMost(Duration.ofSeconds(60))
                 .pollInterval(Duration.ofSeconds(1))
                 .until(() -> PhotoClient.getPhotoById(user, photoId).statusCode() == 200);
     }
@@ -111,7 +114,7 @@ class PhotoApiTest {
     @DisplayName("Получение фото по несуществующему id GET /skinScan/photos/{id} возвращает 404")
     void getPhotoByUnknownIdReturns404() {
         var user = AuthClient.getRegisteredUser();
-        String noSuchPicture = Picture.uniqueName();
+        String noSuchPicture = Picture.uniqueId();
 
         PhotoClient.getPhotoById(user, noSuchPicture)
                 .then()

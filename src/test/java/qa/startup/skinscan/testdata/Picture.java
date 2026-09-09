@@ -32,4 +32,9 @@ public final class Picture {
     public static String uniqueName() {
         return "qa_photo_" + UUID.randomUUID() + ".png";
     }
+
+    /** Случайный UUID — для проверки «фото по несуществующему id». */
+    public static String uniqueId() {
+        return UUID.randomUUID().toString();
+    }
 }
