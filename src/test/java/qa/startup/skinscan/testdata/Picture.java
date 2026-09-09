@@ -15,7 +15,7 @@ public final class Picture {
      * Клиент и сервер обмениваются меткой, чтобы понять,
      * что именно лежит в теле запроса/ответа и как его обрабатывать.
      */
-    public static final String PNG_MIME = "image/png";
+    public static final String mimeType = "image/png";
 
     /**
      * Минимальный валидный PNG 1x1 пиксель (70 байт), прозрачный RGBA.

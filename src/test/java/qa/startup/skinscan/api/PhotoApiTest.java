@@ -3,54 +3,44 @@ package qa.startup.skinscan.api;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import qa.startup.skinscan.clients.AuthClient;
+import qa.startup.skinscan.clients.PhotoClient;
 import qa.startup.skinscan.models.User;
+import qa.startup.skinscan.testdata.Picture;
 
 import java.time.Duration;
-import java.util.UUID;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.notNullValue;
-import static qa.startup.skinscan.clients.AuthClient.registeredUser;
-import static qa.startup.skinscan.clients.PhotoClient.PNG_1X1;
-import static qa.startup.skinscan.clients.PhotoClient.getById;
-import static qa.startup.skinscan.clients.PhotoClient.getByName;
-import static qa.startup.skinscan.clients.PhotoClient.uniquePhotoName;
-import static qa.startup.skinscan.clients.PhotoClient.upload;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag("regression")
 class PhotoApiTest {
-
-    @BeforeAll
-    static void setUp() {
-        RestAssured.baseURI = "http://localhost:8080";
-    }
 
     private static void awaitAnalyzed(User user, String photoId) {
         Awaitility.await()
                 .atMost(Duration.ofSeconds(30))
                 .pollInterval(Duration.ofSeconds(1))
-                .until(() -> getById(user, photoId).statusCode() == 200);
+                .until(() -> PhotoClient.getPhotoById(user, photoId).statusCode() == 200);
     }
 
     @Test
-    @DisplayName("Загрузка фото: 202 и photoId в ответе")
+    @DisplayName("Загрузка фото POST /skinScan/photos/upload возвращает 202")
     void uploadPhotoReturns202WithId() {
-        var user = registeredUser();
+        var user = AuthClient.registeredUser();
 
-        upload(user, uniquePhotoName(), PNG_1X1, "image/png")
+        PhotoClient.upload(user, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType)
                 .then()
                 .statusCode(202);
     }
 
     @Test
-    @DisplayName("Загрузка без авторизации: 401")
+    @DisplayName("Загрузка без авторизации POST /skinScan/photos/upload возвращает 401")
     void uploadPhotoWithoutAuthReturns401() {
         RestAssured.given()
-                .multiPart("file", uniquePhotoName(), PNG_1X1, "image/png")
+                .multiPart("file", Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType)
                 .when()
                 .post("/skinScan/photos/upload")
                 .then()
@@ -58,76 +48,96 @@ class PhotoApiTest {
     }
 
     @Test
-    @DisplayName("После обработки фото по id: 200, size_file и processing_time присутствуют")
+    @DisplayName("Получение фото по id после анализа GET /skinScan/photos/{id} возвращает 200")
     void getPhotoByIdAfterAnalysisReturns200WithMetadata() {
-        var user = registeredUser();
-        String fileName = uniquePhotoName();
+        var user = AuthClient.registeredUser();
 
-        Response upload = upload(user, fileName, PNG_1X1, "image/png");
-        upload.then().statusCode(202);
-        String photoId = upload.asString().replace("\"", "").trim();
+        Response response = PhotoClient.upload(user, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType);
+
+        response.then()
+                .statusCode(202);
+
+        String photoId = response.asString().replace("\"", "").trim();
 
         awaitAnalyzed(user, photoId);
 
-        getById(user, photoId)
+        var json = PhotoClient.getPhotoById(user, photoId)
                 .then()
                 .statusCode(200)
-                .body("size_file", greaterThan(0))
-                .body("processing_time", notNullValue());
+                .extract()
+                .jsonPath();
+
+        assertTrue(json.getInt("size_file") > 0);
+        assertNotNull(json.getString("processing_time"));
     }
 
     @Test
-    @DisplayName("Получение фото по имени: 200")
+    @DisplayName("Получение фото по имени GET /skinScan/photos/name/{nameFile} возвращает 200")
     void getPhotoByNameAfterAnalysisReturns200() {
-        var user = registeredUser();
-        String fileName = uniquePhotoName();
+        var user = AuthClient.registeredUser();
+        String pictureName = Picture.uniqueName();
 
-        Response upload = upload(user, fileName, PNG_1X1, "image/png");
-        upload.then().statusCode(202);
-        awaitAnalyzed(user, upload.asString().replace("\"", "").trim());
+        Response response = PhotoClient.upload(user, pictureName, Picture.PNG_1X1, Picture.mimeType);
 
-        getByName(user, fileName)
+        response.then()
+                .statusCode(202);
+
+        String photoId = response.asString().replace("\"", "").trim();
+
+        awaitAnalyzed(user, photoId);
+
+        var json = PhotoClient.getPhotoByName(user, pictureName)
                 .then()
-                .statusCode(200);
+                .statusCode(200)
+                .extract()
+                .jsonPath();
+
+        assertTrue(json.getInt("size_file") > 0);
+        assertNotNull(json.getString("processing_time"));
     }
 
     @Test
-    @DisplayName("Получение фото по несуществующему имени: 404")
+    @DisplayName("Получение фото по несуществующему имени GET /skinScan/photos/name/{nameFile} возвращает 404")
     void getPhotoByUnknownNameReturns404() {
-        var user = registeredUser();
+        var user = AuthClient.registeredUser();
+        String noSuchPicture = Picture.uniqueName();
 
-        getByName(user, "no_such_file_" + UUID.randomUUID() + ".png")
+        PhotoClient.getPhotoByName(user, noSuchPicture)
                 .then()
                 .statusCode(404);
     }
 
     @Test
-    @DisplayName("Получение фото по несуществующему id: 404")
+    @DisplayName("Получение фото по несуществующему id GET /skinScan/photos/{id} возвращает 404")
     void getPhotoByUnknownIdReturns404() {
-        var user = registeredUser();
+        var user = AuthClient.registeredUser();
+        String noSuchPicture = Picture.uniqueName();
 
-        getById(user, UUID.randomUUID().toString())
+        PhotoClient.getPhotoById(user, noSuchPicture)
                 .then()
                 .statusCode(404);
     }
 
     @Test
-    @DisplayName("Чужой пользователь не имеет доступа к фото: 403")
+    @DisplayName("Посторонний пользователь не имеет доступа к фото GET /skinScan/photos/{id} возвращает 403")
     void otherUserCannotAccessPhotoReturns403() {
-        var owner = registeredUser();
-        var stranger = registeredUser();
+        var owner = AuthClient.registeredUser();
+        var stranger = AuthClient.registeredUser();
 
-        Response upload = upload(owner, uniquePhotoName(), PNG_1X1, "image/png");
-        upload.then().statusCode(202);
-        String photoId = upload.asString().replace("\"", "").trim();
+        Response response = PhotoClient.upload(owner, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType);
 
-        getById(stranger, photoId)
+        response.then()
+                .statusCode(202);
+
+        String photoId = response.asString().replace("\"", "").trim();
+
+        PhotoClient.getPhotoById(stranger, photoId)
                 .then()
                 .statusCode(403);
     }
 
     @Test
-    @DisplayName("Список фото без авторизации: 401")
+    @DisplayName("Список фото без авторизации GET /skinScan/photos возвращает 401")
     void getAllPhotosWithoutAuthReturns401() {
         RestAssured.given()
                 .when()
