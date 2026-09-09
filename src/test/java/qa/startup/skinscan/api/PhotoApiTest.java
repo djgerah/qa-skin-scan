@@ -62,10 +62,10 @@ class PhotoApiTest {
 
         Response response = PhotoClient.upload(user, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType);
 
-        response.then()
-                .statusCode(202);
-
-        String photoId = response.asString().replace("\"", "").trim();
+        String photoId = response.then()
+                .statusCode(202)
+                .extract()
+                .jsonPath().getString("");
 
         awaitAnalyzed(user, photoId);
 
