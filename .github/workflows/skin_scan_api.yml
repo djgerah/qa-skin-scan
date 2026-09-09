@@ -1,0 +1,147 @@
+name: SkinScan API Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_repo:
+        description: 'SkinScan app repository (owner/name), uses SKINSCAN_APP variable if empty'
+        required: false
+        default: ''
+      app_ref:
+        description: 'App repository branch'
+        required: false
+        default: 'main'
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 6 * * *'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: api-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_REPO: ${{ inputs.app_repo || vars.SKINSCAN_APP }}
+  DB_URL: jdbc:postgresql://localhost:5432/skinScan_db
+  DB_USER: skinScan_user
+  DB_PASSWORD: skinscan_dev_pass
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: skinScan_db
+          POSTGRES_USER: skinScan_user
+          POSTGRES_PASSWORD: skinscan_dev_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U skinScan_user -d skinScan_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.APP_REPO }}
+          ref: ${{ inputs.app_ref || 'main' }}
+          path: app
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Start SkinScan app
+        working-directory: app
+        env:
+          SPRING_PROFILES_ACTIVE: local
+          SPRING_DATASOURCE_URL: ${{ env.DB_URL }}
+          SPRING_DATASOURCE_USERNAME: ${{ env.DB_USER }}
+          SPRING_DATASOURCE_PASSWORD: ${{ env.DB_PASSWORD }}
+        run: |
+          nohup ./gradlew bootRun --no-daemon > bootrun.log 2>&1 &
+          for i in $(seq 1 90); do
+            curl -sf http://localhost:8080/skinScan/check-run > /dev/null && break
+            if [ "$i" -eq 90 ]; then
+              echo "App failed to start in 3 minutes"
+              tail -100 bootrun.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Run tests
+        run: >
+          ./gradlew cleanTest test --no-daemon
+          -Dbase.url=http://localhost:8080
+          -Ddb.url=$DB_URL
+          -Ddb.user=$DB_USER
+          -Ddb.password=$DB_PASSWORD
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-${{ github.run_number }}
+          path: build/allure-results
+          retention-days: 30
+          include-hidden-files: true
+
+      - name: Upload app logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-logs-${{ github.run_number }}
+          path: app/bootrun.log
+          retention-days: 7
+
+  publish-report:
+    needs: test
+    if: always() && github.ref == 'refs/heads/main' && github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: allure-results-${{ github.run_number }}
+          path: allure-results
+
+      - uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Generate report
+        run: |
+          npm install -g allure
+          mkdir -p allure-results/history
+          if [ -d gh-pages/history ]; then
+            cp -r gh-pages/history/* allure-results/history/
+          fi
+          allure generate allure-results -o site
+
+      - name: Publish to GitHub Pages
+        id: deployment
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - uses: actions/deploy-pages@v4

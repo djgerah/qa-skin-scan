@@ -1,6 +1,7 @@
 package qa.startup.skinscan.clients;
 
 import io.qameta.allure.Step;
+import qa.startup.skinscan.config.Config;
 import io.restassured.response.Response;
 import qa.startup.skinscan.models.User;
 
@@ -20,7 +21,7 @@ public final class PhotoClient {
      */
     @Step("POST /skinScan/photos/upload — загрузка фото [{fileName}]")
     public static Response upload(User user, String fileName, byte[] content, String mimeType) {
-        return given().baseUri("http://localhost:8080")
+        return given().baseUri(Config.baseUrl())
                 .header("Authorization", user.basicAuth())
                 .multiPart("file", fileName, content, mimeType)
                 .when()
@@ -30,7 +31,7 @@ public final class PhotoClient {
     /** Получает фото по id: GET /skinScan/photos/{id}. 404 — нет такого, 403 — чужое. */
     @Step("GET /skinScan/photos/{id} — получение фото по id [{photoId}]")
     public static Response getPhotoById(User user, String photoId) {
-        return given().baseUri("http://localhost:8080")
+        return given().baseUri(Config.baseUrl())
                 .header("Authorization", user.basicAuth())
                 .when()
                 .get("/skinScan/photos/" + photoId);
@@ -39,7 +40,7 @@ public final class PhotoClient {
     /** Ищет фото по имени файла: GET /skinScan/photos/name/{nameFile}. 404 — не найдено. */
     @Step("GET /skinScan/photos/name/{nameFile} — поиск фото по имени [{nameFile}]")
     public static Response getPhotoByName(User user, String nameFile) {
-        return given().baseUri("http://localhost:8080")
+        return given().baseUri(Config.baseUrl())
                 .header("Authorization", user.basicAuth())
                 .when()
                 .get("/skinScan/photos/name/" + nameFile);
@@ -48,7 +49,7 @@ public final class PhotoClient {
     /** Список всех фото пользователя: GET /skinScan/photos. */
     @Step("GET /skinScan/photos — список всех фото пользователя")
     public static Response getAllPhotos(User user) {
-        return given().baseUri("http://localhost:8080")
+        return given().baseUri(Config.baseUrl())
                 .header("Authorization", user.basicAuth())
                 .when()
                 .get("/skinScan/photos");

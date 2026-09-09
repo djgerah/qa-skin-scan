@@ -1,6 +1,7 @@
 package qa.startup.skinscan.clients;
 
 import io.qameta.allure.Step;
+import qa.startup.skinscan.config.Config;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import qa.startup.skinscan.models.User;
@@ -20,7 +21,7 @@ public final class AuthClient {
      */
     @Step("POST /skinScan/register — регистрация пользователя [{user.login}]")
     public static Response register(User user) {
-        return given().baseUri("http://localhost:8080")
+        return given().baseUri(Config.baseUrl())
                 .header("X-Forwarded-For", randomForwardedFor())
                 .contentType(ContentType.JSON)
                 .body(UserRequest.of(user))
@@ -33,7 +34,7 @@ public final class AuthClient {
      */
     @Step("GET /skinScan/login — вход пользователя [{user.login}]")
     public static Response login(User user) {
-        return given().baseUri("http://localhost:8080")
+        return given().baseUri(Config.baseUrl())
                 .header("X-Forwarded-For", randomForwardedFor())
                 .queryParam("auth", user.authParam())
                 .when()

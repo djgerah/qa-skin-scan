@@ -1,7 +1,9 @@
 package qa.startup.skinscan.api;
 
 import io.qameta.allure.Allure;
+import qa.startup.skinscan.config.Config;
 import io.qameta.allure.Step;
+import qa.startup.skinscan.config.Config;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -26,7 +28,7 @@ class HealthCheckTest {
 
     @Step("GET /skinScan/check-run — проверка доступности БД")
     private Map<String, Object> checkRun() {
-        return given().baseUri("http://localhost:8080")
+        return given().baseUri(Config.baseUrl())
                 .when()
                 .get("/skinScan/check-run")
                 .then()

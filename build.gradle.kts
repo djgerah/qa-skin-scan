@@ -39,10 +39,19 @@ tasks.test {
         }
     }
 
+    listOf("base.url", "db.url", "db.user", "db.password").forEach { key ->
+        System.getProperty(key)?.let { systemProperty(key, it) }
+    }
+
     testLogging {
         events("passed", "failed", "skipped")
         showExceptions = true
     }
+
+    val aspectjWeaver = configurations.testRuntimeClasspath.get()
+        .incoming.files.files
+        .first { it.name.startsWith("aspectjweaver-") }
+    jvmArgs("-javaagent:$aspectjWeaver")
 }
 
 tasks.register<Exec>("allureReport") {
