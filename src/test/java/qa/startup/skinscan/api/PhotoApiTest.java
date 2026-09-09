@@ -82,10 +82,10 @@ class PhotoApiTest {
 
         Response response = PhotoClient.upload(user, pictureName, Picture.PNG_1X1, Picture.mimeType);
 
-        response.then()
-                .statusCode(202);
-
-        String photoId = response.asString().replace("\"", "").trim();
+        String photoId = response.then()
+                .statusCode(202)
+                .extract()
+                .jsonPath().getString("");
 
         awaitAnalyzed(user, photoId);
 
@@ -129,10 +129,10 @@ class PhotoApiTest {
 
         Response response = PhotoClient.upload(owner, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType);
 
-        response.then()
-                .statusCode(202);
-
-        String photoId = response.asString().replace("\"", "").trim();
+        String photoId = response.then()
+                .statusCode(202)
+                .extract()
+                .jsonPath().getString("");
 
         PhotoClient.getPhotoById(stranger, photoId)
                 .then()
