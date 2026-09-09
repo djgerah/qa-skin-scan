@@ -20,7 +20,7 @@ import static qa.startup.skinscan.clients.AuthClient.registeredUser;
 class UserApiTest {
 
     @Test
-    @DisplayName("Обновление данных пользователя")
+    @DisplayName("Обновление данных пользователя с валидной авторизацией PUT /skinScan/user/update возвращает 200")
     void updateUserDataWithValidAuthReturns200() {
         var user = registeredUser();
 
@@ -34,7 +34,7 @@ class UserApiTest {
     }
 
     @Test
-    @DisplayName("Обновление данных без авторизации")
+    @DisplayName("Обновление данных без авторизации PUT /skinScan/user/update возвращает 401")
     void updateUserDataWithoutAuthReturns401() {
         var user = getRandomUser();
 
@@ -48,7 +48,7 @@ class UserApiTest {
     }
 
     @Test
-    @DisplayName("Обновление данных с неверным паролем")
+    @DisplayName("Обновление данных с неверным паролем PUT /skinScan/user/update возвращает 401")
     void updateUserDataWithWrongPasswordReturns401() {
         var user = getRandomUser();
 
@@ -62,7 +62,7 @@ class UserApiTest {
     }
 
     @Test
-    @DisplayName("Успешный вход после смены пароля")
+    @DisplayName("Успешный вход после смены пароля GET /skinScan/login возвращает 200")
     void loginWithNewPasswordReturns200() {
         var user = registeredUser();
         var newPassword = UUID.randomUUID().toString().substring(0, 8) + "_password";
@@ -77,7 +77,7 @@ class UserApiTest {
    }
 
     @Test
-    @DisplayName("Безуспешный вход со старым паролем после его смены")
+    @DisplayName("Безуспешный вход со старым паролем после его смены GET /skinScan/login возвращает 401")
     void loginWithOldPasswordReturns401() {
         var user = registeredUser();
         var newPassword = UUID.randomUUID().toString().substring(0, 8) + "_password";
@@ -92,7 +92,7 @@ class UserApiTest {
     }
 
     @Test
-    @DisplayName("Смена пароля с неверным старым паролем")
+    @DisplayName("Смена пароля с неверным старым паролем PUT /skinScan/user/update/{login} возвращает 401")
     void changePasswordWithWrongOldPasswordReturns401() {
         var user = registeredUser();
 
@@ -102,7 +102,7 @@ class UserApiTest {
     }
 
     @Test
-    @DisplayName("Смена пароля на короткий (< 6 символов)")
+    @DisplayName("Смена пароля на короткий (< 6 символов) PUT /skinScan/user/update/{login} возвращает 400")
     void changePasswordToShortPasswordReturns400() {
         var user = registeredUser();
 

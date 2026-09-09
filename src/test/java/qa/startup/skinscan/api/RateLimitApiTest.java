@@ -14,7 +14,7 @@ class RateLimitApiTest {
     private static final int LOGIN_LIMIT = 10;
 
     @Test
-    @DisplayName("Превышение лимита запросов sign up с одного IP")
+    @DisplayName("Превышение лимита запросов с одного IP POST /skinScan/register возвращает 429")
     void registerRateLimitReturns429AfterLimit() {
         var client = given()
                 .header("X-Forwarded-For", randomForwardedFor());
@@ -36,7 +36,7 @@ class RateLimitApiTest {
     }
 
     @Test
-    @DisplayName("Превышение лимита запросов sign in с одного IP")
+    @DisplayName("Превышение лимита запросов с одного IP GET /skinScan/login возвращает 429")
     void loginRateLimitReturns429AfterLimit() {
         var client = given()
                 .header("X-Forwarded-For", randomForwardedFor());

@@ -14,7 +14,7 @@ import static qa.startup.skinscan.models.User.getRandomUser;
 @Tag("regression")
 class AuthApiTest {
     @Test
-    @DisplayName("Регистрация нового пользователя")
+    @DisplayName("Регистрация нового пользователя POST /skinScan/register возвращает 201")
     void registerNewUserReturns201() {
         var user = getRandomUser();
 
@@ -24,7 +24,7 @@ class AuthApiTest {
     }
 
     @Test
-    @DisplayName("Повторная регистрация того же логина")
+    @DisplayName("Повторная регистрация того же логина POST /skinScan/register возвращает 409")
     void registerDuplicateUserReturns409() {
         var user = getRandomUser();
 
@@ -36,7 +36,7 @@ class AuthApiTest {
     }
 
     @Test
-    @DisplayName("Регистрация с невалидным email")
+    @DisplayName("Регистрация с невалидным email POST /skinScan/register возвращает 400")
     void registerWithInvalidEmailReturns400() {
         var user = getRandomUser();
 
@@ -46,7 +46,7 @@ class AuthApiTest {
     }
 
     @Test
-    @DisplayName("Регистрация с коротким паролем (< 6 символов)")
+    @DisplayName("Регистрация с коротким паролем (< 6 символов) POST /skinScan/register возвращает 400")
     void registerWithShortPasswordReturns400() {
         var user = getRandomUser();
 
@@ -57,7 +57,7 @@ class AuthApiTest {
     }
 
     @Test
-    @DisplayName("Sign in с валидными данными")
+    @DisplayName("Вход с валидными данными GET /skinScan/login возвращает 200")
     void loginWithValidCredentialsReturnsUserId() {
         var user = registeredUser();
 
@@ -68,7 +68,7 @@ class AuthApiTest {
     }
 
     @Test
-    @DisplayName("Sign in с неверным паролем")
+    @DisplayName("Вход с неверным паролем GET /skinScan/login возвращает 401")
     void loginWithWrongPasswordReturns401() {
         var user = registeredUser();
 
@@ -78,7 +78,7 @@ class AuthApiTest {
     }
 
     @Test
-    @DisplayName("Sign in несуществующего пользователя")
+    @DisplayName("Вход несуществующего пользователя GET /skinScan/login возвращает 401")
     void loginUnknownUserReturns401() {
         login(getRandomUser())
                 .then()

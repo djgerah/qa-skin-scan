@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class HealthCheckTest {
 
     @Test
-    @DisplayName("Проверка доступности БД")
+    @DisplayName("Проверка доступности БД GET /skinScan/check-run возвращает 200")
     void checkRunReturnsOkWithDbStatus() {
         Map<String, Object> body = given().baseUri("http://localhost:8080")
                 .when()
