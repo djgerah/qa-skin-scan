@@ -29,7 +29,7 @@ class PhotoApiTest {
     @Test
     @DisplayName("Загрузка фото POST /skinScan/photos/upload возвращает 202")
     void uploadPhotoReturns202WithId() {
-        var user = AuthClient.registeredUser();
+        var user = AuthClient.getRegisteredUser();
 
         PhotoClient.upload(user, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType)
                 .then()
@@ -50,7 +50,7 @@ class PhotoApiTest {
     @Test
     @DisplayName("Получение фото по id после анализа GET /skinScan/photos/{id} возвращает 200")
     void getPhotoByIdAfterAnalysisReturns200WithMetadata() {
-        var user = AuthClient.registeredUser();
+        var user = AuthClient.getRegisteredUser();
 
         Response response = PhotoClient.upload(user, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType);
 
@@ -74,7 +74,7 @@ class PhotoApiTest {
     @Test
     @DisplayName("Получение фото по имени GET /skinScan/photos/name/{nameFile} возвращает 200")
     void getPhotoByNameAfterAnalysisReturns200() {
-        var user = AuthClient.registeredUser();
+        var user = AuthClient.getRegisteredUser();
         String pictureName = Picture.uniqueName();
 
         Response response = PhotoClient.upload(user, pictureName, Picture.PNG_1X1, Picture.mimeType);
@@ -99,7 +99,7 @@ class PhotoApiTest {
     @Test
     @DisplayName("Получение фото по несуществующему имени GET /skinScan/photos/name/{nameFile} возвращает 404")
     void getPhotoByUnknownNameReturns404() {
-        var user = AuthClient.registeredUser();
+        var user = AuthClient.getRegisteredUser();
         String noSuchPicture = Picture.uniqueName();
 
         PhotoClient.getPhotoByName(user, noSuchPicture)
@@ -110,7 +110,7 @@ class PhotoApiTest {
     @Test
     @DisplayName("Получение фото по несуществующему id GET /skinScan/photos/{id} возвращает 404")
     void getPhotoByUnknownIdReturns404() {
-        var user = AuthClient.registeredUser();
+        var user = AuthClient.getRegisteredUser();
         String noSuchPicture = Picture.uniqueName();
 
         PhotoClient.getPhotoById(user, noSuchPicture)
@@ -121,8 +121,8 @@ class PhotoApiTest {
     @Test
     @DisplayName("Посторонний пользователь не имеет доступа к фото GET /skinScan/photos/{id} возвращает 403")
     void otherUserCannotAccessPhotoReturns403() {
-        var owner = AuthClient.registeredUser();
-        var stranger = AuthClient.registeredUser();
+        var owner = AuthClient.getRegisteredUser();
+        var stranger = AuthClient.getRegisteredUser();
 
         Response response = PhotoClient.upload(owner, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType);
 
