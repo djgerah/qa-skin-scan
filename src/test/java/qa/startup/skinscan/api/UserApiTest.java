@@ -1,5 +1,6 @@
 package qa.startup.skinscan.api;
 
+import io.qameta.allure.Allure;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -38,13 +39,15 @@ class UserApiTest {
     void updateUserDataWithoutAuthReturns401() {
         var user = getRandomUser();
 
-        given()
-                .contentType(io.restassured.http.ContentType.JSON)
-                .body(user)
-                .when()
-                .put("/skinScan/user/update")
-                .then()
-                .statusCode(401);
+        Allure.step("PUT /skinScan/user/update без заголовка Authorization", (step) -> {
+            given()
+                    .contentType(io.restassured.http.ContentType.JSON)
+                    .body(user)
+                    .when()
+                    .put("/skinScan/user/update")
+                    .then()
+                    .statusCode(401);
+        });
     }
 
     @Test
@@ -52,13 +55,15 @@ class UserApiTest {
     void updateUserDataWithWrongPasswordReturns401() {
         var user = getRandomUser();
 
-        given()
-                .contentType(io.restassured.http.ContentType.JSON)
-                .body(new UserRequest(user.login(), "wrong-password", UUID.randomUUID().toString().substring(0, 8) + "@skin-scan.ru", getRandomPhone()))
-                .when()
-                .put("/skinScan/user/update")
-                .then()
-                .statusCode(401);
+        Allure.step("PUT /skinScan/user/update с неверным паролем в Basic Auth", (step) -> {
+            given()
+                    .contentType(io.restassured.http.ContentType.JSON)
+                    .body(new UserRequest(user.login(), "wrong-password", UUID.randomUUID().toString().substring(0, 8) + "@skin-scan.ru", getRandomPhone()))
+                    .when()
+                    .put("/skinScan/user/update")
+                    .then()
+                    .statusCode(401);
+        });
     }
 
     @Test

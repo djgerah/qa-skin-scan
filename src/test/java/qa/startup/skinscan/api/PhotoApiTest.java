@@ -1,5 +1,7 @@
 package qa.startup.skinscan.api;
 
+import io.qameta.allure.Allure;
+import io.qameta.allure.Step;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.awaitility.Awaitility;
@@ -22,6 +24,7 @@ class PhotoApiTest {
     /**
      * Ждёт завершения асинхронного анализа фото (сервер возвращает 502, пока фото в обработке).
      */
+    @Step("Ожидание завершения анализа фото [{photoId}] (до 60 секунд)")
     private static void awaitAnalyzed(User user, String photoId) {
         Awaitility.await()
                 .atMost(Duration.ofSeconds(60))
@@ -42,12 +45,14 @@ class PhotoApiTest {
     @Test
     @DisplayName("Загрузка без авторизации POST /skinScan/photos/upload возвращает 401")
     void uploadPhotoWithoutAuthReturns401() {
-        RestAssured.given()
-                .multiPart("file", Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType)
-                .when()
-                .post("/skinScan/photos/upload")
-                .then()
-                .statusCode(401);
+        Allure.step("POST /skinScan/photos/upload без заголовка Authorization", (step) -> {
+            RestAssured.given()
+                    .multiPart("file", Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType)
+                    .when()
+                    .post("/skinScan/photos/upload")
+                    .then()
+                    .statusCode(401);
+        });
     }
 
     @Test
@@ -142,10 +147,12 @@ class PhotoApiTest {
     @Test
     @DisplayName("Список фото без авторизации GET /skinScan/photos возвращает 401")
     void getAllPhotosWithoutAuthReturns401() {
-        RestAssured.given()
-                .when()
-                .get("/skinScan/photos")
-                .then()
-                .statusCode(401);
+        Allure.step("GET /skinScan/photos без заголовка Authorization", (step) -> {
+            RestAssured.given()
+                    .when()
+                    .get("/skinScan/photos")
+                    .then()
+                    .statusCode(401);
+        });
     }
 }

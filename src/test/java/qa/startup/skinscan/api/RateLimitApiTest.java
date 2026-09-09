@@ -1,5 +1,6 @@
 package qa.startup.skinscan.api;
 
+import io.qameta.allure.Allure;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -19,20 +20,24 @@ class RateLimitApiTest {
         var client = given()
                 .header("X-Forwarded-For", randomForwardedFor());
 
-        for (int i = 0; i < REGISTER_LIMIT; i++) {
-            int statusCode = client
-                    .when()
-                    .post("/skinScan/register").statusCode();
+        Allure.step("POST /skinScan/register: " + REGISTER_LIMIT + " запросов в пределах лимита", (step) -> {
+            for (int i = 0; i < REGISTER_LIMIT; i++) {
+                int statusCode = client
+                        .when()
+                        .post("/skinScan/register").statusCode();
 
-            if (statusCode == 429) {
-                throw new AssertionError("Лимит исчерпан на запросе #" + (i + 1));
+                if (statusCode == 429) {
+                    throw new AssertionError("Лимит исчерпан на запросе #" + (i + 1));
+                }
             }
-        }
+        });
 
-        client.when()
-                .post("/skinScan/register")
-                .then()
-                .statusCode(429);
+        Allure.step("POST /skinScan/register: запрос сверх лимита", (step) -> {
+            client.when()
+                    .post("/skinScan/register")
+                    .then()
+                    .statusCode(429);
+        });
     }
 
     @Test
@@ -41,19 +46,23 @@ class RateLimitApiTest {
         var client = given()
                 .header("X-Forwarded-For", randomForwardedFor());
 
-        for (int i = 0; i < LOGIN_LIMIT; i++) {
-            int statusCode = client
-                    .when()
-                    .get("/skinScan/login").statusCode();
+        Allure.step("GET /skinScan/login: " + LOGIN_LIMIT + " запросов в пределах лимита", (step) -> {
+            for (int i = 0; i < LOGIN_LIMIT; i++) {
+                int statusCode = client
+                        .when()
+                        .get("/skinScan/login").statusCode();
 
-            if (statusCode == 429) {
-                throw new AssertionError("Лимит исчерпан на запросе #" + (i + 1));
+                if (statusCode == 429) {
+                    throw new AssertionError("Лимит исчерпан на запросе #" + (i + 1));
+                }
             }
-        }
+        });
 
-        client.when()
-                .get("/skinScan/login")
-                .then()
-                .statusCode(429);
+        Allure.step("GET /skinScan/login: запрос сверх лимита", (step) -> {
+            client.when()
+                    .get("/skinScan/login")
+                    .then()
+                    .statusCode(429);
+        });
     }
 }

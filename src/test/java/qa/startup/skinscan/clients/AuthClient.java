@@ -1,5 +1,6 @@
 package qa.startup.skinscan.clients;
 
+import io.qameta.allure.Step;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import qa.startup.skinscan.models.User;
@@ -17,6 +18,7 @@ public final class AuthClient {
     /**
      * Регистрирует пользователя: POST /skinScan/register. 201 — успех, 400 — данные не прошли валидацию.
      */
+    @Step("POST /skinScan/register — регистрация пользователя [{user.login}]")
     public static Response register(User user) {
         return given().baseUri("http://localhost:8080")
                 .header("X-Forwarded-For", randomForwardedFor())
@@ -29,6 +31,7 @@ public final class AuthClient {
     /**
      * Логин: GET /skinScan/login?auth=Base64("логин:пароль"). 200 — успех, 401 — неверные учётные данные.
      */
+    @Step("GET /skinScan/login — вход пользователя [{user.login}]")
     public static Response login(User user) {
         return given().baseUri("http://localhost:8080")
                 .header("X-Forwarded-For", randomForwardedFor())
@@ -42,6 +45,7 @@ public final class AuthClient {
      * Возвращает пользователя, который гарантированно существует на сервере.
      * Бросает IllegalStateException, если регистрация не удалась.
      */
+    @Step("Подготовка тестового пользователя: генерация и регистрация")
     public static User getRegisteredUser() {
         var user = User.getRandomUser();
         var response = register(user);
