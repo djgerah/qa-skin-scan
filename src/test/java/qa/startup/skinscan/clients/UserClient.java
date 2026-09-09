@@ -13,9 +13,7 @@ import static io.restassured.RestAssured.given;
  */
 public final class UserClient {
 
-//    private UserClient() {
-//    }
-
+    /** Обновляет данные пользователя: PUT /skinScan/user/update. 200 — успех, 401 — без авторизации. */
     public static Response update(User user, UserRequest request) {
         return given().baseUri("http://localhost:8080")
                 .header("Authorization", user.basicAuth())
@@ -25,6 +23,7 @@ public final class UserClient {
                 .put("/skinScan/user/update");
     }
 
+    /** Меняет пароль: PUT /skinScan/user/update/{login}. 200 — успех, 401/403 — неверный старый пароль или чужой login. */
     public static Response updatePassword(User user, String oldPassword, String newPassword) {
         return given().baseUri("http://localhost:8080")
                 .header("Authorization", user.basicAuth())
