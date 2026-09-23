@@ -155,4 +155,20 @@ class PhotoApiTest {
                     .statusCode(401);
         });
     }
+
+    @Test
+    @DisplayName("Загрузка фото с уже существующим именем POST /skinScan/photos/upload возвращает 200")
+    void uploadPhotoWithExistingNameReturns200() {
+        var user = AuthClient.getRegisteredUser();
+        String pictureName = Picture.uniqueName();
+
+        Response response = PhotoClient.upload(user, pictureName, Picture.PNG_1X1, Picture.mimeType);
+        response.then()
+                .statusCode(202);
+
+        response = PhotoClient.upload(user, pictureName, Picture.PNG_1X1, Picture.mimeType);
+
+        response.then()
+                .statusCode(200);
+    }
 }
