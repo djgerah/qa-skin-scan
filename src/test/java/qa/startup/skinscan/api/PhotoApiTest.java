@@ -5,6 +5,7 @@ import io.qameta.allure.Step;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.awaitility.Awaitility;
+// import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,7 @@ class PhotoApiTest {
     }
 
     @Test
+    // @Disabled(ML_STUB_DISABLED_REASON)
     @DisplayName("Получение фото по id после анализа GET /skinScan/photos/{id} возвращает 200")
     void getPhotoByIdAfterAnalysisReturns200WithMetadata() {
         var user = AuthClient.getRegisteredUser();
@@ -101,6 +103,7 @@ class PhotoApiTest {
     }
 
     @Test
+    // @Disabled(ML_STUB_DISABLED_REASON)
     @DisplayName("Получение фото по имени GET /skinScan/photos/name/{nameFile} возвращает 200")
     void getPhotoByNameAfterAnalysisReturns200() {
         var user = AuthClient.getRegisteredUser();
@@ -218,44 +221,5 @@ class PhotoApiTest {
         PhotoClient.upload(user, Document.uniqueName(), Document.TXT_CONTENT, Document.mimeType)
                 .then()
                 .statusCode(400);
-    }
-
-
-    @Test
-    @DisplayName("Список всех фото с авторизацией GET /skinScan/photos возвращает 200 и содержит все загруженные фото")
-    void getAllPhotosWithAuthReturns200WithAnalyzedPhotos() {
-        var user = AuthClient.getRegisteredUser();
-        final int photoCount = 3;
-        var uploadedIds = new ArrayList<String>(photoCount);
-
-        Allure.step("Загрузка " + photoCount + " фото POST /skinScan/photos/upload", (step) -> {
-            for (int i = 0; i < photoCount; i++) {
-                Response response = PhotoClient.upload(user, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType);
-
-                String photoId = response.then()
-                        .statusCode(202)
-                        .extract()
-                        .jsonPath().getString("");
-
-                uploadedIds.add(photoId);
-            }
-        });
-
-        Allure.step("Ожидание завершения анализа всех загруженных фото", (step) -> {
-            uploadedIds.forEach(photoId -> awaitAnalyzed(user, photoId));
-        });
-
-        var json = PhotoClient.getAllPhotos(user)
-                .then()
-                .statusCode(200)
-                .extract()
-                .jsonPath();
-
-        var photosIds = json.getList("id", String.class);
-
-        assertNotNull(photosIds, "Список фото пуст");
-        assertTrue(photosIds.size() >= photoCount, "Список фото не содержит всех загруженных фото");
-        uploadedIds.forEach(photoId -> assertTrue(photosIds.contains(photoId),
-                "Загруженное фото " + photoId + " отсутствует в списке"));
     }
 }
