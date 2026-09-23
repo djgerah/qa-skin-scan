@@ -63,6 +63,10 @@ spring.datasource.password=skinscan_dev_pass
 ```bash
 ./gradlew test -Ddb.url=jdbc:postgresql://localhost:5432/skinScan_db -Ddb.user=skinScan_user -Ddb.password=your_password
 ```
+Базовый URL тестируемого приложения переопределяется аналогично (по умолчанию `http://localhost:8080`):
+```bash
+./gradlew test -Dbase.url=http://ci-host:8080
+```
 
 ### 4.3 Запуск всех тестов
 ```bash
@@ -110,7 +114,8 @@ src/test/java/qa/startup/skinscan/
 ├── testdata/
 │   └── Picture.java            # тестовые изображения (PNG 1x1 в Base64), уникальные имена
 └── config/
-    └── Db.java                 # JDBC-доступ к БД приложения
+    ├── Db.java                 # JDBC-доступ к БД приложения
+    └── Config.java             # конфигурация окружения: base.url / BASE_URL
 ```
 
 **Ключевые принципы:**
@@ -149,3 +154,28 @@ src/test/java/qa/startup/skinscan/
 - `GET /skinScan/photos/name/{nameFile}` — 200 после анализа; 404 для несуществующего имени.
 - `GET /skinScan/photos` — 401 без авторизации.
 - **Асинхронность:** после загрузки фото тесты через Awaitility ждут завершения анализа (до 60 секунд), т.к. сервер возвращает 502, пока фото в обработке.
+
+---
+
+## 7. CI (GitHub Actions)
+
+Workflow `.github/workflows/skin_scan_api.yml` («SkinScan API Tests») автоматизирует прогон и отчётность:
+
+**Триггеры:**
+- **push в `main`** — полный прогон + публикация отчёта в GitHub Pages;
+- **schedule** — ежедневно в 06:00 UTC;
+- **workflow_dispatch** — ручной запуск с выбором репозитория приложения и ветки.
+
+**Шаги pipeline:**
+1. PostgreSQL 16 поднимается как service-контейнер (БД `skinScan_db`, пользователь `skinScan_user`).
+2. Клонируется репозиторий приложения SkinScan и запускается `./gradlew bootRun` (профиль `local`, Liquibase применяет миграции автоматически).
+3. Ожидание готовности по `GET /skinScan/check-run` (до 3 минут, при таймауте — артефакт с логами приложения).
+4. Прогон тестов: `./gradlew cleanTest test -Dbase.url=... -Ddb.url=...`.
+5. Сырые результаты Allure загружаются как артефакт (30 дней).
+6. Отчёт генерируется с историей прогонов (history переносится из ветки `gh-pages`) и публикуется в GitHub Pages.
+
+**Первичная настройка (один раз):**
+1. Переменная репозитория `SKINSCAN_APP` (Settings → Secrets and variables → Actions → Variables) — `owner/app-repo`.
+2. Settings → Pages → Source = **GitHub Actions**.
+
+Отчёт после прогона: `https://<owner>.github.io/qa-skin-scan/`; артефакты — во вкладке Actions.
