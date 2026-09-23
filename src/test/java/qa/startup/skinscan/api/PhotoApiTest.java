@@ -5,7 +5,6 @@ import io.qameta.allure.Step;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.awaitility.Awaitility;
-// import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -16,7 +15,6 @@ import qa.startup.skinscan.testdata.Document;
 import qa.startup.skinscan.testdata.Picture;
 
 import java.time.Duration;
-import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -59,7 +57,6 @@ class PhotoApiTest {
     }
 
     @Test
-    // @Disabled(ML_STUB_DISABLED_REASON)
     @DisplayName("Получение фото по id после анализа GET /skinScan/photos/{id} возвращает 200")
     void getPhotoByIdAfterAnalysisReturns200WithMetadata() {
         var user = AuthClient.getRegisteredUser();
@@ -103,7 +100,6 @@ class PhotoApiTest {
     }
 
     @Test
-    // @Disabled(ML_STUB_DISABLED_REASON)
     @DisplayName("Получение фото по имени GET /skinScan/photos/name/{nameFile} возвращает 200")
     void getPhotoByNameAfterAnalysisReturns200() {
         var user = AuthClient.getRegisteredUser();
@@ -195,6 +191,22 @@ class PhotoApiTest {
                     .then()
                     .statusCode(401);
         });
+    }
+
+    @Test
+    @DisplayName("Список всех фото у нового пользователя с авторизацией GET /skinScan/photos возвращает 200 (список пуст)")
+    void getAllPhotosWithAuthReturns200EmptyForNewUser() {
+        var user = AuthClient.getRegisteredUser();
+
+        var photosIds = PhotoClient.getAllPhotos(user)
+                .then()
+                .statusCode(200)
+                .extract()
+                .jsonPath()
+                .getList("$", String.class);
+
+        assertNotNull(photosIds);
+        assertTrue(photosIds.isEmpty());
     }
 
     @Test
