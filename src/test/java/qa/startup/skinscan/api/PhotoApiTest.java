@@ -81,6 +81,25 @@ class PhotoApiTest {
     }
 
     @Test
+    @DisplayName("Получение фото по id сразу после загрузки (анализ не завершён) GET /skinScan/photos/{id} возвращает 502")
+    void getPhotoByIdWhileProcessingReturns502() {
+        var user = AuthClient.getRegisteredUser();
+
+        Response response = PhotoClient.upload(user, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType);
+
+        String photoId = response.then()
+                .statusCode(202)
+                .extract()
+                .jsonPath().getString("");
+
+        Allure.step("GET /skinScan/photos/{id} до завершения анализа — сервер отвечает 502", (step) -> {
+            PhotoClient.getPhotoById(user, photoId)
+                    .then()
+                    .statusCode(502);
+        });
+    }
+
+    @Test
     @DisplayName("Получение фото по имени GET /skinScan/photos/name/{nameFile} возвращает 200")
     void getPhotoByNameAfterAnalysisReturns200() {
         var user = AuthClient.getRegisteredUser();
@@ -103,6 +122,23 @@ class PhotoApiTest {
 
         assertTrue(json.getInt("size_file") > 0);
         assertNotNull(json.getString("processing_time"));
+    }
+
+    @Test
+    @DisplayName("Получение фото по имени сразу после загрузки (анализ не завершён) GET /skinScan/photos/name/{nameFile} возвращает 502")
+    void getPhotoByNameWhileProcessingReturns502() {
+        var user = AuthClient.getRegisteredUser();
+        String pictureName = Picture.uniqueName();
+
+        PhotoClient.upload(user, pictureName, Picture.PNG_1X1, Picture.mimeType)
+                .then()
+                .statusCode(202);
+
+        Allure.step("GET /skinScan/photos/name/{nameFile} до завершения анализа — сервер отвечает 502", (step) -> {
+            PhotoClient.getPhotoByName(user, pictureName)
+                    .then()
+                    .statusCode(502);
+        });
     }
 
     @Test
