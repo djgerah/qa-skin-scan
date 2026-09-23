@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import qa.startup.skinscan.clients.AuthClient;
 import qa.startup.skinscan.clients.PhotoClient;
 import qa.startup.skinscan.models.User;
+import qa.startup.skinscan.testdata.Document;
 import qa.startup.skinscan.testdata.Picture;
 
 import java.time.Duration;
@@ -170,5 +171,15 @@ class PhotoApiTest {
 
         response.then()
                 .statusCode(200);
+    }
+
+    @Test
+    @DisplayName("Загрузка файла неверного формата POST /skinScan/photos/upload возвращает 400")
+    void uploadPhotoWithWrongFormatReturns400() {
+        var user = AuthClient.getRegisteredUser();
+
+        PhotoClient.upload(user, Document.uniqueName(), Document.TXT_CONTENT, Document.mimeType)
+                .then()
+                .statusCode(400);
     }
 }
