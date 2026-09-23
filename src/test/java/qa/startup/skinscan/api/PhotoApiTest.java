@@ -15,6 +15,7 @@ import qa.startup.skinscan.testdata.Document;
 import qa.startup.skinscan.testdata.Picture;
 
 import java.time.Duration;
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -217,5 +218,44 @@ class PhotoApiTest {
         PhotoClient.upload(user, Document.uniqueName(), Document.TXT_CONTENT, Document.mimeType)
                 .then()
                 .statusCode(400);
+    }
+
+
+    @Test
+    @DisplayName("Список всех фото с авторизацией GET /skinScan/photos возвращает 200 и содержит все загруженные фото")
+    void getAllPhotosWithAuthReturns200WithAnalyzedPhotos() {
+        var user = AuthClient.getRegisteredUser();
+        final int photoCount = 3;
+        var uploadedIds = new ArrayList<String>(photoCount);
+
+        Allure.step("Загрузка " + photoCount + " фото POST /skinScan/photos/upload", (step) -> {
+            for (int i = 0; i < photoCount; i++) {
+                Response response = PhotoClient.upload(user, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType);
+
+                String photoId = response.then()
+                        .statusCode(202)
+                        .extract()
+                        .jsonPath().getString("");
+
+                uploadedIds.add(photoId);
+            }
+        });
+
+        Allure.step("Ожидание завершения анализа всех загруженных фото", (step) -> {
+            uploadedIds.forEach(photoId -> awaitAnalyzed(user, photoId));
+        });
+
+        var json = PhotoClient.getAllPhotos(user)
+                .then()
+                .statusCode(200)
+                .extract()
+                .jsonPath();
+
+        var photosIds = json.getList("id", String.class);
+
+        assertNotNull(photosIds, "Список фото пуст");
+        assertTrue(photosIds.size() >= photoCount, "Список фото не содержит всех загруженных фото");
+        uploadedIds.forEach(photoId -> assertTrue(photosIds.contains(photoId),
+                "Загруженное фото " + photoId + " отсутствует в списке"));
     }
 }
