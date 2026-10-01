@@ -6,6 +6,10 @@ import org.junit.jupiter.api.Test;
 import qa.startup.skinscan.clients.AuthClient;
 import qa.startup.skinscan.models.User;
 
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 @Tag("smoke")
 @Tag("regression")
 class AuthApiTest {
@@ -47,7 +51,7 @@ class AuthApiTest {
         var user = User.getRandomUser();
 
         AuthClient.register(new User(
-                user.login(), "123", user.email(), user.phone()))
+                        user.login(), "123", user.email(), user.phone()))
                 .then()
                 .statusCode(400);
     }
@@ -79,5 +83,56 @@ class AuthApiTest {
         AuthClient.login(User.getRandomUser())
                 .then()
                 .statusCode(401);
+    }
+
+    @Test
+    @DisplayName("Регистрация с пустым логином POST /skinScan/register возвращает 400")
+    void registerWithEmptyLoginReturns400() {
+        var user = User.getRandomUser();
+
+        AuthClient.register(new User("", user.password(), user.email(), user.phone()))
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @DisplayName("Регистрация с пустым паролем POST /skinScan/register возвращает 400")
+    void registerWithEmptyPasswordReturns400() {
+        var user = User.getRandomUser();
+
+        AuthClient.register(new User(user.login(), "", user.email(), user.phone()))
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @DisplayName("Регистрация только с логином и паролем (без email и телефона) POST /skinScan/register возвращает 201")
+    void registerWithoutEmailAndPhoneReturns201() {
+        var user = User.getRandomUser();
+
+        AuthClient.register(new User(user.login(), user.password(), null, null))
+                .then()
+                .statusCode(201);
+    }
+
+    @Test
+    @DisplayName("Вход без параметра auth GET /skinScan/login возвращает 400")
+    void loginWithoutAuthParamReturns400() {
+        AuthClient.loginWithoutAuthParam()
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @DisplayName("Вход с валидными данными GET /skinScan/login возвращает id пользователя в виде UUID")
+    void loginReturnsUserIdAsUuid() {
+        var user = AuthClient.getRegisteredUser();
+
+        UUID userId = AuthClient.login(user)
+                .then()
+                .statusCode(200)
+                .extract().as(UUID.class);
+
+        assertNotNull(userId);
     }
 }

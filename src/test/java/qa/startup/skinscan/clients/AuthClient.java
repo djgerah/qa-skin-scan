@@ -42,6 +42,17 @@ public final class AuthClient {
     }
 
     /**
+     * Логин без параметра auth: GET /skinScan/login. 400 — обязательный query-параметр auth не передан.
+     */
+    @Step("GET /skinScan/login — вход без параметра auth")
+    public static Response loginWithoutAuthParam() {
+        return given().baseUri(Config.baseUrl())
+                .header("X-Forwarded-For", randomForwardedFor())
+                .when()
+                .get("/skinScan/login");
+    }
+
+    /**
      * Создаёт пользователя со случайными данными и регистрирует его.
      * Возвращает пользователя, который гарантированно существует на сервере.
      * Бросает IllegalStateException, если регистрация не удалась.
