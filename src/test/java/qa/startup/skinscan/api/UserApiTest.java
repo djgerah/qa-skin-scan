@@ -147,20 +147,24 @@ class UserApiTest {
                 .statusCode(400);
     }
 
-    @Disabled("BUG: сервер возвращает 200 вместо 403 — A может сменить пароль B")
+    @Disabled("BUG: сервер возвращает 200 вместо 403 — Пользователь может сменить пароль постороннего пользователя")
     @Test
     @Tag("security")
-    @DisplayName("Пользователь «A» не может сменить пароль пользователя «B» PUT /skinScan/user/update/{login} возвращает 403")
-    void userACannotChangeUserBPasswordReturns403() {
-        var userA = getRegisteredUser();
-        var userB = getRegisteredUser();
+    @DisplayName("Пользователь не может сменить пароль постороннего пользователя PUT /skinScan/user/update/{login} возвращает 403")
+    void userCannotChangeOthersPasswordReturns403() {
+        var user = getRegisteredUser();
+        var stranger = getRegisteredUser();
 
-        UserClient.updatePassword(userA, userB.login(), userB.password(), "new_password_123")
-                .then()
-                .statusCode(403);
+        Allure.step("Текущий пользователь не может сменить пароль постороннего пользователя", (step) -> {
+            UserClient.updatePassword(user, stranger.login(), stranger.password(), "new_password_123")
+                    .then()
+                    .statusCode(403);
+        });
 
-        AuthClient.login(userB)
-                .then()
-                .statusCode(200);
+        Allure.step("Пароль второго пользователя остался неизменным", (step) -> {
+            AuthClient.login(stranger)
+                    .then()
+                    .statusCode(200);
+        });
     }
 }
