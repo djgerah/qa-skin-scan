@@ -4,6 +4,7 @@ import io.qameta.allure.Allure;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import qa.startup.skinscan.clients.AuthClient;
 import qa.startup.skinscan.clients.UserClient;
 import qa.startup.skinscan.models.User;
 import qa.startup.skinscan.models.UserRequest;
@@ -14,7 +15,6 @@ import static qa.startup.skinscan.models.User.getRandomUser;
 
 import java.util.UUID;
 
-import static qa.startup.skinscan.clients.AuthClient.login;
 import static qa.startup.skinscan.clients.AuthClient.getRegisteredUser;
 
 @Tag("regression")
@@ -72,14 +72,14 @@ class UserApiTest {
         var user = getRegisteredUser();
         var newPassword = UUID.randomUUID().toString().substring(0, 8) + "_password";
 
-        UserClient.updatePassword(user, user.password(), newPassword)
+        UserClient.updatePassword(user, user.login(), user.password(), newPassword)
                 .then()
                 .statusCode(200);
 
-        login(new User(user.login(), newPassword, user.email(), user.phone()))
+        AuthClient.login(new User(user.login(), newPassword, user.email(), user.phone()))
                 .then()
                 .statusCode(200);
-   }
+    }
 
     @Test
     @DisplayName("Безуспешный вход со старым паролем после его смены GET /skinScan/login возвращает 401")
@@ -87,11 +87,11 @@ class UserApiTest {
         var user = getRegisteredUser();
         var newPassword = UUID.randomUUID().toString().substring(0, 8) + "_password";
 
-        UserClient.updatePassword(user, user.password(), newPassword)
+        UserClient.updatePassword(user, user.login(), user.password(), newPassword)
                 .then()
                 .statusCode(200);
 
-        login(user)
+        AuthClient.login(user)
                 .then()
                 .statusCode(401);
     }
@@ -101,7 +101,7 @@ class UserApiTest {
     void changePasswordWithWrongOldPasswordReturns401() {
         var user = getRegisteredUser();
 
-        UserClient.updatePassword(user, "wrong-old-password", "new_password_123")
+        UserClient.updatePassword(user, user.login(), "wrong-old-password", "new_password_123")
                 .then()
                 .statusCode(401);
     }
@@ -111,8 +111,54 @@ class UserApiTest {
     void changePasswordToShortPasswordReturns400() {
         var user = getRegisteredUser();
 
-        UserClient.updatePassword(user, user.password(), "123")
+        UserClient.updatePassword(user, user.login(), user.password(), "123")
                 .then()
                 .statusCode(400);
+    }
+
+    @Test
+    @DisplayName("Обновление данных с невалидным email PUT /skinScan/user/update возвращает 400")
+    void updateUserDataWithInvalidEmailReturns400() {
+        var user = getRegisteredUser();
+
+        UserClient.update(user, new UserRequest(user.login(), user.password(), "not-an-email", getRandomPhone()))
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @DisplayName("Смена пароля несуществующего логина PUT /skinScan/user/update/{login} возвращает 401")
+    void changePasswordForNotExistingLoginReturns401() {
+        var notExistingUser = getRandomUser();
+
+        UserClient.updatePassword(notExistingUser, notExistingUser.login(), notExistingUser.password(), "new_password_123")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    @DisplayName("Обновление данных с пустым логином PUT /skinScan/user/update возвращает 400")
+    void updateUserDataWithEmptyLoginReturns400() {
+        var user = getRegisteredUser();
+
+        UserClient.update(user, new UserRequest("", user.password(), user.email(), user.phone()))
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @Tag("security")
+    @DisplayName("Пользователь «A» не может сменить пароль пользователя «B» PUT /skinScan/user/update/{login} возвращает 403")
+    void userACannotChangeUserBPasswordReturns403() {
+        var userA = getRegisteredUser();
+        var userB = getRegisteredUser();
+
+        UserClient.updatePassword(userA, userB.login(), userB.password(), "new_password_123")
+                .then()
+                .statusCode(403);
+
+        AuthClient.login(userB)
+                .then()
+                .statusCode(200);
     }
 }

@@ -28,12 +28,12 @@ public final class UserClient {
 
     /** Меняет пароль: PUT /skinScan/user/update/{login}. 200 — успех, 401/403 — неверный старый пароль или чужой login. */
     @Step("PUT /skinScan/user/update/{login} — смена пароля пользователя [{user.login}]")
-    public static Response updatePassword(User user, String oldPassword, String newPassword) {
+    public static Response updatePassword(User user, String login, String oldPassword, String newPassword) {
         return given().baseUri(Config.baseUrl())
                 .header("Authorization", user.basicAuth())
                 .contentType(ContentType.JSON)
                 .body(new PasswordUpdateRequest(newPassword, oldPassword))
                 .when()
-                .put("/skinScan/user/update/" + user.login());
+                .put("/skinScan/user/update/" + login);
     }
 }
