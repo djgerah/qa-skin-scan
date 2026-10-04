@@ -234,4 +234,56 @@ class PhotoApiTest {
                 .then()
                 .statusCode(400);
     }
+
+    @Test
+    @DisplayName("Одинаковое имя файла у разных пользователей POST /skinScan/photos/upload возвращает 202")
+    void uploadSameFileNameByDifferentUsersReturns202() {
+        var userA = AuthClient.getRegisteredUser();
+        var userB = AuthClient.getRegisteredUser();
+        String pictureName = Picture.uniqueName();
+
+        Allure.step("Первый пользователь загружает фото с именем " + pictureName, (step) -> {
+            PhotoClient.upload(userA, pictureName, Picture.PNG_1X1, Picture.mimeType)
+                    .then()
+                    .statusCode(202);
+        });
+
+        Allure.step("Второй пользователь загружает фото с тем же именем — имя уникально в пределах пользователя", (step) -> {
+            PhotoClient.upload(userB, pictureName, Picture.PNG_1X1, Picture.mimeType)
+                    .then()
+                    .statusCode(202);
+        });
+    }
+
+    @Test
+    @DisplayName("Посторонний пользователь не находит чужое фото по имени GET /skinScan/photos/name/{nameFile} возвращает 404")
+    void strangerCannotGetPhotoByNameReturns404() {
+        var owner = AuthClient.getRegisteredUser();
+        var stranger = AuthClient.getRegisteredUser();
+        String pictureName = Picture.uniqueName();
+
+        Allure.step("Пользователь загружает фото с именем " + pictureName, (step) -> {
+            PhotoClient.upload(owner, pictureName, Picture.PNG_1X1, Picture.mimeType)
+                    .then()
+                    .statusCode(202);
+        });
+
+        Allure.step("Поиск по имени выполняется только среди фото текущего пользователя", (step) -> {
+            PhotoClient.getPhotoByName(stranger, pictureName)
+                    .then()
+                    .statusCode(404);
+        });
+    }
+
+    @Test
+    @DisplayName("Получение фото по не-UUID id GET /skinScan/photos/{id} возвращает 400")
+    void getPhotoByNonUuidIdReturns400() {
+        var user = AuthClient.getRegisteredUser();
+
+        Allure.step("GET /skinScan/photos/{id} с id, который не является UUID", (step) -> {
+            PhotoClient.getPhotoById(user, "not-a-uuid")
+                    .then()
+                    .statusCode(400);
+        });
+    }
 }
