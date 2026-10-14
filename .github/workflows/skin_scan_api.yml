@@ -29,7 +29,7 @@ env:
   APP_REPO: ${{ inputs.app_repo || vars.SKINSCAN_APP }}
   DB_URL: jdbc:postgresql://localhost:5432/skinScan_db
   DB_USER: skinScan_user
-  DB_PASSWORD: skinscan_dev_pass
+  DB_PASSWORD: password
 
 jobs:
   test:
@@ -42,7 +42,7 @@ jobs:
         env:
           POSTGRES_DB: skinScan_db
           POSTGRES_USER: skinScan_user
-          POSTGRES_PASSWORD: skinscan_dev_pass
+          POSTGRES_PASSWORD: password
         ports:
           - 5432:5432
         options: >-

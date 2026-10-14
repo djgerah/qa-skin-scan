@@ -41,7 +41,7 @@
 - **Gradle 8+** (или используйте wrapper `./gradlew`).
 - **Allure CLI** — для генерации и просмотра отчётов (`allure generate`, `allure serve`).
 - **Запущенное приложение SkinScan** на `http://localhost:8080` (см. README backend-проекта).
-- **PostgreSQL** — та же БД, которую использует тестируемое приложение (параметры подключения — в `src/test/resources/connectionBD.properties`).
+- **PostgreSQL** — та же БД, которую использует тестируемое приложение (параметры подключения передаются через `-Ddb.*` или переменные окружения `DB_*`).
 
 ---
 
@@ -52,34 +52,42 @@
 git clone <url-репозитория>
 ```
 
-### 4.2 Настройка подключения к БД
-Параметры подключения задаются в файле `src/test/resources/connectionBD.properties`:
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5433/skinScan_db
-spring.datasource.username=skinScan_user
-spring.datasource.password=skinscan_dev_pass
-```
-Их можно переопределить системными свойствами, не меняя файл:
+### 4.2 Параметры подключения
+Параметры читаются из системных свойств (`-D...`), затем из переменных окружения; если не заданы — используются значения по умолчанию.
+
+| Параметр | Системное свойство | Переменная окружения | Значение по умолчанию |
+|----------|--------------------|----------------------|------------------------|
+| Базовый URL приложения | `-Dbase.url` | `BASE_URL` | `http://localhost:8080` |
+| JDBC URL БД | `-Ddb.url` | `DB_URL` | `jdbc:postgresql://localhost:5432/skinScan_db` |
+| Пользователь БД | `-Ddb.user` | `DB_USER` | `skinScan_user` |
+| Пароль БД | `-Ddb.password` | `DB_PASSWORD` | `password` |
+
+В CI параметры переопределяются через переменные окружения. Пример запуска с явными значениями:
 ```bash
-./gradlew test -Ddb.url=jdbc:postgresql://localhost:5432/skinScan_db -Ddb.user=skinScan_user -Ddb.password=your_password
-```
-Базовый URL тестируемого приложения переопределяется аналогично (по умолчанию `http://localhost:8080`):
-```bash
-./gradlew test -Dbase.url=http://ci-host:8080
+./gradlew test \
+  -Dbase.url=http://localhost:8080 \
+  -Ddb.url=jdbc:postgresql://localhost:5432/skinScan_db \
+  -Ddb.user=skinScan_user \
+  -Ddb.password=password
 ```
 
 ### 4.3 Запуск всех тестов
 ```bash
 ./gradlew test
 ```
+При необходимости параметры подключения переопределяются (см. 4.2):
+```bash
+./gradlew test -Dbase.url=... -Ddb.url=... -Ddb.user=... -Ddb.password=...
+```
 
 ### 4.4 Запуск по тегам
-Тесты размечены тегами `smoke` и `regression`. Фильтрация через системное свойство `tags` (через запятую):
+Тесты размечены тегами `smoke`, `regression` и `db`. Фильтрация через системное свойство `tags` (через запятую):
 ```bash
 ./gradlew test -Dtags=smoke
 ./gradlew test -Dtags=regression
-./gradlew test -Dtags=smoke,regression
+./gradlew test -Dtags=db
 ```
+Без `-Dtags` выполняются все тесты, включая `db` (так работает CI).
 
 ### 4.5 Отчёты Allure
 ```bash
@@ -168,7 +176,7 @@ Workflow `.github/workflows/skin_scan_api.yml` («SkinScan API Tests») авто
 
 **Шаги pipeline:**
 1. PostgreSQL 16 поднимается как service-контейнер (БД `skinScan_db`, пользователь `skinScan_user`).
-2. Клонируется репозиторий приложения SkinScan и запускается `./gradlew bootRun` (профиль `local`, Liquibase применяет миграции автоматически).
+2. Клонируется репозиторий приложения SkinScan и запускается `./gradlew bootRun` (профиль `local`, Flyway применяет миграции автоматически).
 3. Ожидание готовности по `GET /skinScan/check-run` (до 3 минут, при таймауте — артефакт с логами приложения).
 4. Прогон тестов: `./gradlew cleanTest test -Dbase.url=... -Ddb.url=...`.
 5. Сырые результаты Allure загружаются как артефакт (30 дней).
