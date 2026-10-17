@@ -11,23 +11,26 @@ import java.util.Optional;
 
 /**
  * Тонкий JDBC-хелпер для проверок состояния БД из тестов.
- * Подключение — к той же БД, что использует тестируемое приложение (см. {@link Config}).
  */
 public final class Db {
 
     private Db() {
     }
 
-    /** Выполняет SELECT и возвращает значение первой колонки первой строки (или Optional.empty()). */
+    /**
+     * Выполняет SELECT и возвращает значение первой колонки первой строки (или Optional.empty()).
+     */
     public static Optional<String> selectQuery(String query, Object... args) {
         try (Connection connection = open();
+             // Скомпилированный SQL запрос с placeholder-ами ?, компилируется драйвером один раз
              PreparedStatement statement = connection.prepareStatement(query)) {
 
             bind(statement, args);
 
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.ofNullable(rs.getString(1));
+            // Курсор по строкам результата: next() сдвигает его на следующую строку
+            try (ResultSet cursor = statement.executeQuery()) {
+                if (cursor.next()) {
+                    return Optional.ofNullable(cursor.getString(1));
                 }
                 return Optional.empty();
             }
@@ -36,10 +39,13 @@ public final class Db {
         }
     }
 
+    /** Открывает соединение с БД по параметрам из {@link Config}. */
     private static Connection open() throws SQLException {
+        // DriverManager сам находит драйвер PostgreSQL в classpath
         return DriverManager.getConnection(Config.dbUrl(), Config.dbUser(), Config.dbPassword());
     }
 
+    /** Подставляет значения в placeholder-ы ? (нумерация JDBC начинается с 1). */
     private static void bind(PreparedStatement statement, Object... args) throws SQLException {
         for (int i = 0; i < args.length; i++) {
             statement.setObject(i + 1, args[i]);
