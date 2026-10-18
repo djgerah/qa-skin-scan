@@ -1,54 +1,44 @@
 package qa.startup.skinscan.db;
 
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import qa.startup.skinscan.config.Config;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Optional;
-
 /**
- * Тонкий JDBC-хелпер для проверок состояния БД из тестов.
+ * Точка доступа к БД тестируемого приложения.
+ * JDBC (Java Database Connectivity) — стандартный API Java для работы с реляционными БД
+ * (пакет java.sql).
+ * Это набор интерфейсов:
+ * (Connection) — соединение,
+ * (PreparedStatement) — запрос с параметрами,
+ * (ResultSet) — курсор по строкам результата).
  */
 public final class Db {
+    /**
+     * JdbcTemplate потокобезопасен и рассчитан на переиспользование, поэтому создаётся
+     * один раз, а не на каждый вызов.
+     */
+    private static final JdbcTemplate JDBC = new JdbcTemplate(dataSource());
 
     private Db() {
     }
 
     /**
-     * Выполняет SELECT и возвращает значение первой колонки первой строки (или Optional.empty()).
+     * Возвращает JdbcTemplate, настроенный на БД тестируемого приложения.
      */
-    public static Optional<String> selectQuery(String query, Object... args) {
-        try (Connection connection = open();
-             // Скомпилированный SQL запрос с placeholder-ами ?, компилируется драйвером один раз
-             PreparedStatement statement = connection.prepareStatement(query)) {
-
-            bind(statement, args);
-
-            // Курсор по строкам результата: next() сдвигает его на следующую строку
-            try (ResultSet cursor = statement.executeQuery()) {
-                if (cursor.next()) {
-                    return Optional.ofNullable(cursor.getString(1));
-                }
-                return Optional.empty();
-            }
-        } catch (SQLException e) {
-            throw new IllegalStateException("Ошибка запроса к БД: " + query, e);
-        }
+    public static JdbcTemplate jdbc() {
+        return JDBC;
     }
 
-    /** Открывает соединение с БД по параметрам из {@link Config}. */
-    private static Connection open() throws SQLException {
-        // DriverManager сам находит драйвер PostgreSQL в classpath
-        return DriverManager.getConnection(Config.dbUrl(), Config.dbUser(), Config.dbPassword());
-    }
-
-    /** Подставляет значения в placeholder-ы ? (нумерация JDBC начинается с 1). */
-    private static void bind(PreparedStatement statement, Object... args) throws SQLException {
-        for (int i = 0; i < args.length; i++) {
-            statement.setObject(i + 1, args[i]);
-        }
+    /**
+     * Создаёт источник соединений (DataSource) по параметрам из Config.java.
+     * DriverManagerDataSource открывает новое физическое соединение на каждый запрос.
+     */
+    private static DriverManagerDataSource dataSource() {
+        var dataSource = new DriverManagerDataSource();
+        dataSource.setUrl(Config.dbUrl());
+        dataSource.setUsername(Config.dbUser());
+        dataSource.setPassword(Config.dbPassword());
+        return dataSource;
     }
 }
