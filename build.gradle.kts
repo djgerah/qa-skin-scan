@@ -27,6 +27,8 @@ dependencies {
     testImplementation("io.rest-assured:rest-assured:5.4.0")
     testImplementation("org.awaitility:awaitility:4.2.1")
 
+    testImplementation("org.springframework:spring-jdbc:6.2.19")
+
     testImplementation("com.fasterxml.jackson.core:jackson-databind:2.15.3")
 
     testRuntimeOnly("org.postgresql:postgresql:42.7.11")

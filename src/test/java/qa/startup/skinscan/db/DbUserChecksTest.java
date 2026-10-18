@@ -7,24 +7,12 @@ import qa.startup.skinscan.clients.AuthClient;
 import qa.startup.skinscan.clients.UserClient;
 
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static qa.startup.skinscan.db.BcryptHash.*;
 
 @Tag("db")
 class DbUserChecksTest {
-    /**
-     * BCrypt — это алгоритм хеширования паролей.
-     * Результат — строка фиксированной длины 60 символов с внутренней структурой:
-     * Шаблон BCrypt-хеша:
-     * $2a$12$RgtJlVaWeeP6KkTxPGJgIehncHWzSBZYiI91BW11YuJcaiDd55WMm
-     * └┬─┘└┬┘└┬┘└───────────────────────┬──────────────────────┘
-     *  │   │  │                        соль + хеш, 53 символа
-     *  │   │  cost (2^12 = 4096 итераций)
-     *  │   версия алгоритма: 2a / 2b / 2y
-     *  маркер BCrypt
-     */
-    private static final Pattern BCRYPT = Pattern.compile("^\\$2[aby]\\$\\d{2}\\$.{53}$");
 
     @Test
     @DisplayName("После регистрации пароль хранится в БД как BCrypt-хеш, а не открытым текстом")
@@ -36,7 +24,7 @@ class DbUserChecksTest {
         String password = (String) row.get("password");
 
         assertNotEquals(user.password(), password);
-        assertTrue(BCRYPT.matcher(password).matches());
+        assertTrue(isBcrypt(password));
         assertEquals(user.email(), row.get("email"));
         assertEquals(user.phone(), row.get("phone"));
     }
@@ -58,7 +46,7 @@ class DbUserChecksTest {
         assertNotNull(rowBefore);
         assertNotNull(rowAfter);
         assertNotEquals(rowBefore, rowAfter);
-        assertTrue(BCRYPT.matcher(rowBefore).matches());
-        assertTrue(BCRYPT.matcher(rowAfter).matches());
+        assertTrue(isBcrypt(rowBefore));
+        assertTrue(isBcrypt(rowAfter));
     }
 }

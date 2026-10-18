@@ -17,7 +17,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Проверки таблицы photo напрямую через БД (JDBC).
+ * Проверки таблицы photo напрямую через БД (Spring JdbcTemplate).
  * Статусы в БД хранятся в виде русских подписей (StatusPhoto).
  */
 @Tag("db")
@@ -43,11 +43,12 @@ class DbPhotoChecksTest {
                     .atMost(Duration.ofSeconds(60))
                     .pollInterval(Duration.ofSeconds(1))
                     .until(() -> {
-                        var status = Db.selectQuery(
+                        var statuses = Db.jdbc().queryForList(
                                 "SELECT status FROM photo WHERE id = ?",
+                                String.class,
                                 UUID.fromString(photoId));
-                        status.ifPresent(observed::add);
-                        return status.map(ANALYZED::equals).orElse(false);
+                        observed.addAll(statuses);
+                        return statuses.contains(ANALYZED);
                     });
         });
 
