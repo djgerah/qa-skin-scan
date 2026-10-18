@@ -6,56 +6,59 @@ import org.junit.jupiter.api.Test;
 import qa.startup.skinscan.clients.AuthClient;
 import qa.startup.skinscan.clients.UserClient;
 
+import java.util.Map;
 import java.util.regex.Pattern;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Проверки таблицы users напрямую через БД (JDBC).
- */
 @Tag("db")
 class DbUserChecksTest {
-
-    /** BCrypt-хеш: $2a$12$ + 53 символа (всего 60). */
+    /**
+     * BCrypt — это алгоритм хеширования паролей.
+     * Результат — строка фиксированной длины 60 символов с внутренней структурой:
+     * Шаблон BCrypt-хеша:
+     * $2a$12$RgtJlVaWeeP6KkTxPGJgIehncHWzSBZYiI91BW11YuJcaiDd55WMm
+     * └┬─┘└┬┘└┬┘└───────────────────────┬──────────────────────┘
+     *  │   │  │                        соль + хеш, 53 символа
+     *  │   │  cost (2^12 = 4096 итераций)
+     *  │   версия алгоритма: 2a / 2b / 2y
+     *  маркер BCrypt
+     */
     private static final Pattern BCRYPT = Pattern.compile("^\\$2[aby]\\$\\d{2}\\$.{53}$");
 
     @Test
     @DisplayName("После регистрации пароль хранится в БД как BCrypt-хеш, а не открытым текстом")
     void registeredPasswordIsStoredAsBcryptHash() {
         var user = AuthClient.getRegisteredUser();
+        Map<String, Object> row = Db.jdbc().queryForMap(
+                "SELECT password, email, phone FROM users WHERE login = ?", user.login());
 
-        String password = Db.selectQuery("SELECT password FROM users WHERE login = ?", user.login())
-                .orElseThrow(() -> new AssertionError("Пользователь " + user.login() + " не найден в БД"));
-        String email = Db.selectQuery("SELECT email FROM users WHERE login = ?", user.login())
-                .orElseThrow(() -> new AssertionError("Пользователь " + user.login() + " не найден в БД"));
-        String phone = Db.selectQuery("SELECT phone FROM users WHERE login = ?", user.login())
-                .orElseThrow(() -> new AssertionError("Пользователь " + user.login() + " не найден в БД"));
+        String password = (String) row.get("password");
 
-        assertNotEquals(user.password(), password, "Пароль хранится открытым текстом");
-        assertTrue(BCRYPT.matcher(password).matches(), "Пароль не является BCrypt-хешем: " + password);
-        assertEquals(user.email(), email);
-        assertEquals(user.phone(), phone);
+        assertNotEquals(user.password(), password);
+        assertTrue(BCRYPT.matcher(password).matches());
+        assertEquals(user.email(), row.get("email"));
+        assertEquals(user.phone(), row.get("phone"));
     }
 
     @Test
     @DisplayName("После смены пароля хеш пароля в БД обновляется")
     void passwordHashIsUpdatedAfterChange() {
         var user = AuthClient.getRegisteredUser();
-
-        String before = Db.selectQuery("SELECT password FROM users WHERE login = ?", user.login())
-                .orElseThrow(() -> new AssertionError("Пользователь не найден в БД"));
+        String rowBefore = Db.jdbc().queryForObject(
+                "SELECT password FROM users WHERE login = ?", String.class, user.login());
 
         UserClient.updatePassword(user, user.login(), user.password(), "new_password_123")
                 .then()
                 .statusCode(200);
 
-        String after = Db.selectQuery("SELECT password FROM users WHERE login = ?", user.login())
-                .orElseThrow(() -> new AssertionError("Пользователь не найден в БД"));
+        String rowAfter = Db.jdbc().queryForObject(
+                "SELECT password FROM users WHERE login = ?", String.class, user.login());
 
-        assertNotEquals(before, after, "Хеш пароля в БД не изменился");
-        assertTrue(BCRYPT.matcher(before).matches(), "Старый пароль не является BCrypt-хешем");
-        assertTrue(BCRYPT.matcher(after).matches(), "Новый пароль не является BCrypt-хешем");
+        assertNotNull(rowBefore);
+        assertNotNull(rowAfter);
+        assertNotEquals(rowBefore, rowAfter);
+        assertTrue(BCRYPT.matcher(rowBefore).matches());
+        assertTrue(BCRYPT.matcher(rowAfter).matches());
     }
 }
