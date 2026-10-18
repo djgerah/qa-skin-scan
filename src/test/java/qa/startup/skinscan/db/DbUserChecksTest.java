@@ -8,8 +8,11 @@ import qa.startup.skinscan.clients.UserClient;
 
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static qa.startup.skinscan.db.BcryptHash.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static qa.startup.skinscan.db.BcryptHash.isBcrypt;
 
 @Tag("db")
 class DbUserChecksTest {
