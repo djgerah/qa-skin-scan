@@ -4,6 +4,7 @@ import io.qameta.allure.Step;
 import qa.startup.skinscan.config.Config;
 import io.restassured.response.Response;
 import qa.startup.skinscan.models.User;
+import qa.startup.skinscan.testdata.UploadFile;
 
 import static io.restassured.RestAssured.given;
 
@@ -20,10 +21,10 @@ public final class PhotoClient {
      * Обработка асинхронная: GET по id вернёт 200 только после анализа.
      */
     @Step("POST /skinScan/photos/upload — загрузка фото [{fileName}]")
-    public static Response upload(User user, String fileName, byte[] content, String mimeType) {
+    public static Response upload(User user, UploadFile file) {
         return given().baseUri(Config.baseUrl())
                 .header("Authorization", user.basicAuth())
-                .multiPart("file", fileName, content, mimeType)
+                .multiPart("file", file.name, file.CONTENT, file.mimeType)
                 .when()
                 .post("/skinScan/photos/upload");
     }

@@ -37,8 +37,9 @@ class PhotoApiTest {
     @DisplayName("Загрузка фото POST /skinScan/photos/upload возвращает 202")
     void uploadPhotoReturns202WithId() {
         var user = AuthClient.getRegisteredUser();
+        var pic = new Picture();
 
-        PhotoClient.upload(user, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType)
+        PhotoClient.upload(user, pic)
                 .then()
                 .statusCode(202);
     }
@@ -46,9 +47,11 @@ class PhotoApiTest {
     @Test
     @DisplayName("Загрузка без авторизации POST /skinScan/photos/upload возвращает 401")
     void uploadPhotoWithoutAuthReturns401() {
+        var pic = new Picture();
+
         Allure.step("POST /skinScan/photos/upload без заголовка Authorization", (step) -> {
             RestAssured.given()
-                    .multiPart("file", Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType)
+                    .multiPart("file", pic)
                     .when()
                     .post("/skinScan/photos/upload")
                     .then()
@@ -60,8 +63,9 @@ class PhotoApiTest {
     @DisplayName("Получение фото по id после анализа GET /skinScan/photos/{id} возвращает 200")
     void getPhotoByIdAfterAnalysisReturns200WithMetadata() {
         var user = AuthClient.getRegisteredUser();
+        var pic = new Picture();
 
-        Response response = PhotoClient.upload(user, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType);
+        Response response = PhotoClient.upload(user, pic);
 
         String photoId = response.then()
                 .statusCode(202)
@@ -84,8 +88,9 @@ class PhotoApiTest {
     @DisplayName("Получение фото по id сразу после загрузки (анализ не завершён) GET /skinScan/photos/{id} возвращает 502")
     void getPhotoByIdWhileProcessingReturns502() {
         var user = AuthClient.getRegisteredUser();
+        var pic = new Picture();
 
-        Response response = PhotoClient.upload(user, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType);
+        Response response = PhotoClient.upload(user, pic);
 
         String photoId = response.then()
                 .statusCode(202)
@@ -103,9 +108,9 @@ class PhotoApiTest {
     @DisplayName("Получение фото по имени GET /skinScan/photos/name/{nameFile} возвращает 200")
     void getPhotoByNameAfterAnalysisReturns200() {
         var user = AuthClient.getRegisteredUser();
-        String pictureName = Picture.uniqueName();
+        var pic = new Picture();
 
-        Response response = PhotoClient.upload(user, pictureName, Picture.PNG_1X1, Picture.mimeType);
+        Response response = PhotoClient.upload(user, pic);
 
         String photoId = response.then()
                 .statusCode(202)
@@ -114,7 +119,7 @@ class PhotoApiTest {
 
         awaitAnalyzed(user, photoId);
 
-        var json = PhotoClient.getPhotoByName(user, pictureName)
+        var json = PhotoClient.getPhotoByName(user, pic.name)
                 .then()
                 .statusCode(200)
                 .extract()
@@ -128,14 +133,14 @@ class PhotoApiTest {
     @DisplayName("Получение фото по имени сразу после загрузки (анализ не завершён) GET /skinScan/photos/name/{nameFile} возвращает 502")
     void getPhotoByNameWhileProcessingReturns502() {
         var user = AuthClient.getRegisteredUser();
-        String pictureName = Picture.uniqueName();
+        var pic = new Picture();
 
-        PhotoClient.upload(user, pictureName, Picture.PNG_1X1, Picture.mimeType)
+        PhotoClient.upload(user, pic)
                 .then()
                 .statusCode(202);
 
         Allure.step("GET /skinScan/photos/name/{nameFile} до завершения анализа — сервер отвечает 502", (step) -> {
-            PhotoClient.getPhotoByName(user, pictureName)
+            PhotoClient.getPhotoByName(user, pic.name)
                     .then()
                     .statusCode(502);
         });
@@ -145,7 +150,7 @@ class PhotoApiTest {
     @DisplayName("Получение фото по несуществующему имени GET /skinScan/photos/name/{nameFile} возвращает 404")
     void getPhotoByUnknownNameReturns404() {
         var user = AuthClient.getRegisteredUser();
-        String noSuchPicture = Picture.uniqueName();
+        String noSuchPicture = new Picture().name;
 
         PhotoClient.getPhotoByName(user, noSuchPicture)
                 .then()
@@ -156,9 +161,9 @@ class PhotoApiTest {
     @DisplayName("Получение фото по несуществующему id GET /skinScan/photos/{id} возвращает 404")
     void getPhotoByUnknownIdReturns404() {
         var user = AuthClient.getRegisteredUser();
-        String noSuchPicture = Picture.uniqueId();
+        var noSuchPicture = new Picture();
 
-        PhotoClient.getPhotoById(user, noSuchPicture)
+        PhotoClient.getPhotoById(user, noSuchPicture.id)
                 .then()
                 .statusCode(404);
     }
@@ -168,8 +173,9 @@ class PhotoApiTest {
     void otherUserCannotAccessPhotoReturns403() {
         var owner = AuthClient.getRegisteredUser();
         var stranger = AuthClient.getRegisteredUser();
+        var pic = new Picture();
 
-        Response response = PhotoClient.upload(owner, Picture.uniqueName(), Picture.PNG_1X1, Picture.mimeType);
+        Response response = PhotoClient.upload(owner, pic);
 
         String photoId = response.then()
                 .statusCode(202)
@@ -213,14 +219,13 @@ class PhotoApiTest {
     @DisplayName("Загрузка фото с уже существующим именем POST /skinScan/photos/upload возвращает 200")
     void uploadPhotoWithExistingNameReturns200() {
         var user = AuthClient.getRegisteredUser();
-        String pictureName = Picture.uniqueName();
+        var pic = new Picture();
 
-        Response response = PhotoClient.upload(user, pictureName, Picture.PNG_1X1, Picture.mimeType);
+        Response response = PhotoClient.upload(user, pic);
         response.then()
                 .statusCode(202);
 
-        response = PhotoClient.upload(user, pictureName, Picture.PNG_1X1, Picture.mimeType);
-
+        response = PhotoClient.upload(user, pic);
         response.then()
                 .statusCode(200);
     }
@@ -229,8 +234,9 @@ class PhotoApiTest {
     @DisplayName("Загрузка файла неверного формата POST /skinScan/photos/upload возвращает 400")
     void uploadPhotoWithWrongFormatReturns400() {
         var user = AuthClient.getRegisteredUser();
+        Document doc = new Document();
 
-        PhotoClient.upload(user, Document.uniqueName(), Document.TXT_CONTENT, Document.mimeType)
+        PhotoClient.upload(user, doc)
                 .then()
                 .statusCode(400);
     }
@@ -240,16 +246,19 @@ class PhotoApiTest {
     void uploadSameFileNameByDifferentUsersReturns202() {
         var userA = AuthClient.getRegisteredUser();
         var userB = AuthClient.getRegisteredUser();
-        String pictureName = Picture.uniqueName();
+        var picA = new Picture();
+        var picB = new Picture();
 
-        Allure.step("Первый пользователь загружает фото с именем " + pictureName, (step) -> {
-            PhotoClient.upload(userA, pictureName, Picture.PNG_1X1, Picture.mimeType)
+        Allure.step("Первый пользователь загружает фото с именем " + picA.name, (step) -> {
+            PhotoClient.upload(userA, picA)
                     .then()
                     .statusCode(202);
         });
 
+        picB.setName(picA.name);
+
         Allure.step("Второй пользователь загружает фото с тем же именем — имя уникально в пределах пользователя", (step) -> {
-            PhotoClient.upload(userB, pictureName, Picture.PNG_1X1, Picture.mimeType)
+            PhotoClient.upload(userB, picB)
                     .then()
                     .statusCode(202);
         });
@@ -260,16 +269,16 @@ class PhotoApiTest {
     void strangerCannotGetPhotoByNameReturns404() {
         var owner = AuthClient.getRegisteredUser();
         var stranger = AuthClient.getRegisteredUser();
-        String pictureName = Picture.uniqueName();
+        var pic = new Picture();
 
-        Allure.step("Пользователь загружает фото с именем " + pictureName, (step) -> {
-            PhotoClient.upload(owner, pictureName, Picture.PNG_1X1, Picture.mimeType)
+        Allure.step("Пользователь загружает фото с именем " + pic.name, (step) -> {
+            PhotoClient.upload(owner, pic)
                     .then()
                     .statusCode(202);
         });
 
         Allure.step("Поиск по имени выполняется только среди фото текущего пользователя", (step) -> {
-            PhotoClient.getPhotoByName(stranger, pictureName)
+            PhotoClient.getPhotoByName(stranger, pic.name)
                     .then()
                     .statusCode(404);
         });

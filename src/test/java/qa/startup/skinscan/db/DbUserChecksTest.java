@@ -18,7 +18,7 @@ import static qa.startup.skinscan.db.BcryptHash.isBcrypt;
 class DbUserChecksTest {
 
     @Test
-    @DisplayName("После регистрации пароль хранится в БД как BCrypt-хеш, а не открытым текстом")
+    @DisplayName("После регистрации пароль хранится в БД как BCrypt-хеш")
     void registeredPasswordIsStoredAsBcryptHash() {
         var user = AuthClient.getRegisteredUser();
         Map<String, Object> row = Db.jdbc().queryForMap(
