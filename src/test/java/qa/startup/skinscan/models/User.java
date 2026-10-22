@@ -1,19 +1,25 @@
 package qa.startup.skinscan.models;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Учётные данные тестового пользователя: логин, пароль, email, телефон.
+ * Учётные данные тестового пользователя: логин, пароль, email, телефон, access-токен.
  *
- * @param login    логин (уникален, генерируется случайно)
- * @param password пароль в открытом виде
- * @param email    email пользователя
- * @param phone    телефон в формате +7XXXXXXXXXX
+ * @param login       логин (уникален, генерируется случайно)
+ * @param password    пароль в открытом виде
+ * @param email       email пользователя
+ * @param phone       телефон в формате +7XXXXXXXXXX
+ * @param accessToken JWT для заголовка Authorization; null, пока пользователь не залогинен
  */
-public record User(String login, String password, String email, String phone) {
+public record User(String login, String password, String email, String phone, String accessToken) {
+
+    /**
+     * Учётные данные без токена — для регистрации и логина.
+     */
+    public User(String login, String password, String email, String phone) {
+        this(login, password, email, phone, null);
+    }
 
     /**
      * Создаёт пользователя со случайными данными.
@@ -36,21 +42,22 @@ public record User(String login, String password, String email, String phone) {
     }
 
     /**
-     * Значение заголовка Authorization для HTTP Basic-аутентификации (RFC 7617).
-     * Формат: "Basic " + Base64("логин:пароль").
-     * Используется в UserClient и PhotoClient для доступа к защищённым эндпоинтам.
+     * Копия пользователя с access-токеном, полученным при логине.
      */
-    public String basicAuth() {
-        return "Basic " + authParam();
+    public User withAccessToken(String token) {
+        return new User(login, password, email, phone, token);
     }
 
     /**
-     * Учётные данные "логин:пароль", закодированные в Base64, — без префикса "Basic ".
-     * Используется как значение query-параметра "auth" в AuthClient.login()
-     * (эндпоинт /skinScan/login ожидает чистый Base64, а не заголовок).
+     * Значение заголовка Authorization для JWT-аутентификации.
+     * Формат: "Bearer " + accessToken.
+     * Используется в UserClient и PhotoClient для доступа к защищённым эндпоинтам.
      */
-    public String authParam() {
-        return Base64.getEncoder().encodeToString(
-                (login + ":" + password).getBytes(StandardCharsets.UTF_8));
+    public String authorization() {
+        if (accessToken == null) {
+            throw new IllegalStateException(
+                    "У пользователя " + login + " нет access-токена: сначала выполните логин");
+        }
+        return "Bearer " + accessToken;
     }
 }
