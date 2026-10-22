@@ -4,10 +4,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import qa.startup.skinscan.clients.AuthClient;
+import qa.startup.skinscan.models.JwtResponse;
 import qa.startup.skinscan.models.User;
 
-import java.util.UUID;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Tag("smoke")
@@ -58,7 +58,7 @@ class AuthApiTest {
 
     @Test
     @DisplayName("Вход с валидными данными GET /skinScan/login возвращает 200")
-    void loginWithValidCredentialsReturnsUserId() {
+    void loginWithValidCredentialsReturns200() {
         var user = AuthClient.getRegisteredUser();
 
         AuthClient.login(user)
@@ -116,23 +116,25 @@ class AuthApiTest {
     }
 
     @Test
-    @DisplayName("Вход без параметра auth GET /skinScan/login возвращает 400")
-    void loginWithoutAuthParamReturns400() {
-        AuthClient.loginWithoutAuthParam()
+    @DisplayName("Вход без тела запроса GET /skinScan/login возвращает 400")
+    void loginWithoutBodyReturns400() {
+        AuthClient.loginWithoutBody()
                 .then()
                 .statusCode(400);
     }
 
     @Test
-    @DisplayName("Вход с валидными данными GET /skinScan/login возвращает id пользователя в виде UUID")
-    void loginReturnsUserIdAsUuid() {
+    @DisplayName("Вход с валидными данными GET /skinScan/login возвращает accessToken и refreshToken")
+    void loginReturnsAccessAndRefreshTokens() {
         var user = AuthClient.getRegisteredUser();
 
-        UUID userId = AuthClient.login(user)
+        JwtResponse tokens = AuthClient.login(user)
                 .then()
                 .statusCode(200)
-                .extract().as(UUID.class);
+                .extract().as(JwtResponse.class);
 
-        assertNotNull(userId);
+        assertEquals("Bearer", tokens.type());
+        assertNotNull(tokens.accessToken());
+        assertNotNull(tokens.refreshToken());
     }
 }
