@@ -4,6 +4,7 @@ import io.qameta.allure.Step;
 import qa.startup.skinscan.config.Config;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import qa.startup.skinscan.models.JwtRequest;
 import qa.startup.skinscan.models.User;
 import qa.startup.skinscan.models.UserRequest;
 
@@ -30,22 +31,24 @@ public final class AuthClient {
     }
 
     /**
-     * Логин: GET /skinScan/login?auth=Base64("логин:пароль"). 200 — успех, 401 — неверные учётные данные.
+     * Логин: GET /skinScan/login с телом {"login", "pass"}.
+     * 200 — успех, тело содержит accessToken и refreshToken; 400 — нет тела запроса; 401 — неверные учётные данные.
      */
     @Step("GET /skinScan/login — вход пользователя [{user.login}]")
     public static Response login(User user) {
         return given().baseUri(Config.baseUrl())
                 .header("X-Forwarded-For", randomForwardedFor())
-                .queryParam("auth", user.authParam())
+                .contentType(ContentType.JSON)
+                .body(JwtRequest.of(user))
                 .when()
                 .get("/skinScan/login");
     }
 
     /**
-     * Логин без параметра auth: GET /skinScan/login. 400 — обязательный query-параметр auth не передан.
+     * Логин без тела запроса: GET /skinScan/login. 400 — сервер не получил логин и пароль.
      */
-    @Step("GET /skinScan/login — вход без параметра auth")
-    public static Response loginWithoutAuthParam() {
+    @Step("GET /skinScan/login — вход без тела запроса")
+    public static Response loginWithoutBody() {
         return given().baseUri(Config.baseUrl())
                 .header("X-Forwarded-For", randomForwardedFor())
                 .when()
@@ -53,11 +56,11 @@ public final class AuthClient {
     }
 
     /**
-     * Создаёт пользователя со случайными данными и регистрирует его.
-     * Возвращает пользователя, который гарантированно существует на сервере.
-     * Бросает IllegalStateException, если регистрация не удалась.
+     * Создаёт пользователя со случайными данными, регистрирует его и логинит,
+     * чтобы получить access-токен для защищённых эндпоинтов.
+     * Бросает IllegalStateException, если регистрация или логин не удались.
      */
-    @Step("Подготовка тестового пользователя: генерация и регистрация")
+    @Step("Подготовка тестового пользователя: генерация, регистрация и логин")
     public static User getRegisteredUser() {
         var user = User.getRandomUser();
         var response = register(user);
@@ -68,7 +71,29 @@ public final class AuthClient {
                             + ", тело: " + response.asString());
         }
 
-        return user;
+        return loginWithToken(user);
+    }
+
+    /**
+     * Log in зарегистрированного пользователя, возвращает его копию с access-токеном.
+     */
+    public static User loginWithToken(User user) {
+        var response = login(user);
+
+        if (response.statusCode() != 200) {
+            throw new IllegalStateException(
+                    "loginWithToken: не удалось войти пользователем " + user.login()
+                            + ", код: " + response.statusCode() + ", тело: " + response.asString());
+        }
+
+        String accessToken = response.jsonPath().getString("accessToken");
+
+        if (accessToken == null || accessToken.isBlank()) {
+            throw new IllegalStateException(
+                    "loginWithToken: сервер не вернул accessToken, тело: " + response.asString());
+        }
+
+        return user.withAccessToken(accessToken);
     }
 
     /**
