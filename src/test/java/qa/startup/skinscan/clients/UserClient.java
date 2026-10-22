@@ -19,7 +19,7 @@ public final class UserClient {
     @Step("PUT /skinScan/user/update — обновление данных пользователя [{user.login}]")
     public static Response update(User user, UserRequest request) {
         return given().baseUri(Config.baseUrl())
-                .header("Authorization", user.basicAuth())
+                .header("Authorization", user.authorization())
                 .contentType(ContentType.JSON)
                 .body(request)
                 .when()
@@ -30,7 +30,7 @@ public final class UserClient {
     @Step("PUT /skinScan/user/update/{login} — смена пароля пользователя [{user.login}]")
     public static Response updatePassword(User user, String login, String oldPassword, String newPassword) {
         return given().baseUri(Config.baseUrl())
-                .header("Authorization", user.basicAuth())
+                .header("Authorization", user.authorization())
                 .contentType(ContentType.JSON)
                 .body(new PasswordUpdateRequest(newPassword, oldPassword))
                 .when()
