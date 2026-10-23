@@ -148,9 +148,9 @@ class UserApiTest {
     @Test
     @DisplayName("Смена пароля несуществующего логина PUT /skinScan/user/update/{login} возвращает 401")
     void changePasswordForNotExistingLoginReturns401() {
-        var notExistingUser = getRandomUser();
+        var user = getRegisteredUser();
 
-        UserClient.updatePassword(notExistingUser, notExistingUser.login(), notExistingUser.password(), "new_password_123")
+        UserClient.updatePassword(user, "notExistingLogin", user.password(), "new_password_123")
                 .then()
                 .statusCode(401);
     }

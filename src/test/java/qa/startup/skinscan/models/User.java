@@ -29,7 +29,7 @@ public record User(String login, String password, String email, String phone, St
      */
     public static User getRandomUser() {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
-        return new User("user_" + suffix, suffix + "_password", suffix + "@skin-scan.ru", getRandomPhone());
+        return new User("user_" + suffix, "password_" + suffix, "user_" + suffix + "@skin-scan.ru", getRandomPhone());
     }
 
     /**
