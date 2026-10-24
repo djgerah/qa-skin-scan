@@ -2,7 +2,6 @@ package qa.startup.skinscan.models;
 
 /**
  * Тело запроса логина.
- * Соответствует ru.startup.skinscan.web.model.jwt.JwtRequest на сервере.
  *
  * @param login логин пользователя
  * @param pass  пароль в открытом виде

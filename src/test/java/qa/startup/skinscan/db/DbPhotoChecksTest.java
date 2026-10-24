@@ -10,12 +10,7 @@ import qa.startup.skinscan.clients.PhotoClient;
 import qa.startup.skinscan.testdata.Picture;
 
 import java.time.Duration;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag("db")
 class DbPhotoChecksTest {
@@ -28,30 +23,31 @@ class DbPhotoChecksTest {
         var user = AuthClient.getRegisteredUser();
         var pic = new Picture();
 
-        String photoId = PhotoClient.upload(user, pic)
-                .then()
-                .statusCode(202)
-                .extract()
-                .jsonPath().getString("");
+        String photoId = Allure.step("Загрузка фото [" + pic.name + "]", () ->
+                PhotoClient.upload(user, pic)
+                        .then()
+                        .statusCode(202)
+                        .extract()
+                        .jsonPath().getString(""));
 
-        Set<String> observed = new LinkedHashSet<>();
-
-        Allure.step("Ожидание статуса «" + ANALYZED + "»", (step) -> {
+        Allure.step("Ожидание завершения анализа", (step) -> {
             Awaitility.await()
+                    .alias("Статус фото " + photoId + " в БД не дошёл до «" + ANALYZED + "»")
                     .atMost(Duration.ofSeconds(60))
                     .pollInterval(Duration.ofSeconds(1))
-                    .until(() -> {
-                        List<String> statuses = Db.jdbc().queryForList(
-                                "SELECT status FROM photo WHERE id = ?",
-                                String.class,
-                                UUID.fromString(photoId));
-
-                        observed.addAll(statuses);
-
-                        return statuses.contains(ANALYZED);
-                    });
+                    .until(() -> ANALYZED.equals(currentStatus(photoId)));
         });
+    }
 
-        assertTrue(observed.contains(ANALYZED));
+    /**
+     * Читает текущий статус фото из БД.
+     * id — первичный ключ, поэтому запрос возвращает не более одной строки: результат — строка, а не список.
+     * null означает, что фото ещё не появилось в БД, — ожидание продолжается.
+     */
+    private static String currentStatus(String photoId) {
+        return Db.jdbc().query(
+                "SELECT status FROM photo WHERE id = ?",
+                resultSet -> resultSet.next() ? resultSet.getString("status") : null,
+                UUID.fromString(photoId));
     }
 }
