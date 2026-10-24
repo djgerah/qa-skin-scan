@@ -2,7 +2,7 @@
 
 Обозначения:
 - `{{baseUrl}}` — `http://localhost:8080`
-- `<base64>(login:password)` — значение для query-параметра `?auth=` и заголовка `Authorization: Basic`; `login` = `user_<uuid>`, `password` = `password_<uuid>`
+- `<accessToken>` — JWT из ответа логина (`accessToken`), передаётся в заголовке `Authorization: Bearer <accessToken>`; `login` = `user_<uuid>`, `password` = `password_<uuid>`
 - **Пользователь** — зарегистрированный пользователь с известными `login` = `user_<uuid>` и `password` = `password_<uuid>`
 - **Фото** — фото, загруженное под Пользователем; известны `photoId` и `nameFile`
 
@@ -139,11 +139,17 @@ Content-Type: application/json
 1. Войти, передав в query-параметре `auth` закодированные логин и пароль:
 
 ```
-GET {{baseUrl}}/skinScan/login?auth=<base64>(user_<uuid>:password_<uuid>)
+GET {{baseUrl}}/skinScan/login
+Content-Type: application/json
+
+{
+  "login": "user_<uuid>",
+  "pass": "password_<uuid>"
+}
 ```
 
 **Ожидаемый результат:**
-200 OK. Тело — UUID пользователя.
+200 OK. Тело — JSON с полями type = "Bearer", accessToken и refreshToken.
 
 ---
 
@@ -160,7 +166,13 @@ GET {{baseUrl}}/skinScan/login?auth=<base64>(user_<uuid>:password_<uuid>)
 1. Попытаться войти, передав верный логин и неверный пароль:
 
 ```
-GET {{baseUrl}}/skinScan/login?auth=<base64>(user_<uuid>:wrong-password)
+GET {{baseUrl}}/skinScan/login
+Content-Type: application/json
+
+{
+  "login": "user_<uuid>",
+  "pass": "wrong-password"
+}
 ```
 
 **Ожидаемый результат:**
@@ -181,7 +193,13 @@ GET {{baseUrl}}/skinScan/login?auth=<base64>(user_<uuid>:wrong-password)
 1. Попытаться войти, передав случайные логин и пароль, которых нет в системе:
 
 ```
-GET {{baseUrl}}/skinScan/login?auth=<base64>(<случайный>:<случайный>)
+GET {{baseUrl}}/skinScan/login
+Content-Type: application/json
+
+{
+  "login": "<случайный>",
+  "pass": "<случайный>"
+}
 ```
 
 **Ожидаемый результат:**
@@ -274,17 +292,17 @@ Content-Type: application/json
 
 ---
 
-## 11. Вход без параметра auth
+## 11. Вход без тела запроса
 
 **Описание:**
-Вход без обязательного query-параметра auth `GET /skinScan/login` возвращает 400.
+Вход без обязательного тела запроса `GET /skinScan/login` возвращает 400.
 
 **Предусловия:**
 Нет.
 
 **Шаги:**
 
-1. Попытаться войти, не передав query-параметр auth:
+1. Попытаться войти, не передав тело запроса:
 
 ```
 GET {{baseUrl}}/skinScan/login
@@ -295,10 +313,10 @@ GET {{baseUrl}}/skinScan/login
 
 ---
 
-## 12. Вход с валидными данными возвращает id пользователя в виде UUID
+## 12. Вход с валидными данными возвращает токены
 
 **Описание:**
-Вход с валидными данными `GET /skinScan/login` возвращает id пользователя в виде UUID.
+Вход с валидными данными `GET /skinScan/login` возвращает accessToken и refreshToken.
 
 **Предусловия:**
 Пользователь зарегистрирован (известны `login` и `password`).
@@ -308,13 +326,19 @@ GET {{baseUrl}}/skinScan/login
 1. Войти с валидными данными:
 
 ```
-GET {{baseUrl}}/skinScan/login?auth=<base64>(user_<uuid>:password_<uuid>)
+GET {{baseUrl}}/skinScan/login
+Content-Type: application/json
+
+{
+  "login": "user_<uuid>",
+  "pass": "password_<uuid>"
+}
 ```
 
-2. Прочитать тело ответа и проверить, что оно является корректным UUID.
+2. Прочитать тело ответа и проверить наличие полей accessToken и refreshToken.
 
 **Ожидаемый результат:**
-200 OK. Тело — валидный UUID (успешно парсится как UUID).
+200 OK. Тело — JSON с полями type = "Bearer", accessToken и refreshToken (оба непустые).
 
 ---
 
@@ -357,7 +381,7 @@ GET {{baseUrl}}/skinScan/check-run
 
 ```
 POST {{baseUrl}}/skinScan/photos/upload
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 Content-Type: multipart/form-data
 
 file = <png 1x1>
@@ -408,7 +432,7 @@ file = <png 1x1>
 
 ```
 GET {{baseUrl}}/skinScan/photos/{photoId}
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 ```
 
 **Ожидаемый результат:**
@@ -432,7 +456,7 @@ Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
 
 ```
 GET {{baseUrl}}/skinScan/photos/{photoId}
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 ```
 
 **Ожидаемый результат:**
@@ -456,7 +480,7 @@ Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
 
 ```
 GET {{baseUrl}}/skinScan/photos/name/{nameFile}
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 ```
 
 **Ожидаемый результат:**
@@ -480,7 +504,7 @@ Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
 
 ```
 GET {{baseUrl}}/skinScan/photos/name/{nameFile}
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 ```
 
 **Ожидаемый результат:**
@@ -502,7 +526,7 @@ Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
 
 ```
 GET {{baseUrl}}/skinScan/photos/name/qa_photo_<uuid>.png
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 ```
 
 **Ожидаемый результат:**
@@ -524,7 +548,7 @@ Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
 
 ```
 GET {{baseUrl}}/skinScan/photos/<случайный-uuid>
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 ```
 
 **Ожидаемый результат:**
@@ -538,15 +562,16 @@ Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
 Доступ к чужому фото другим авторизованным пользователем `GET /skinScan/photos/{id}` возвращает 403.
 
 **Предусловия:**
-Зарегистрированы Пользователь A и Пользователь B; A загрузил фото (известен `photoId`).
+Зарегистрированы владелец фото `owner` и посторонний пользователь `stranger`;
+`owner` загрузил фото (известен `photoId`).
 
 **Шаги:**
 
-1. От имени пользователя B запросить фото, принадлежащее пользователю A:
+1. От имени `stranger` запросить фото, принадлежащее `owner`:
 
 ```
 GET {{baseUrl}}/skinScan/photos/{photoId}
-Authorization: Basic <base64>(user_<uuid_B>:password_<uuid_B>)
+Authorization: Bearer <accessToken_stranger>
 ```
 
 **Ожидаемый результат:**
@@ -589,7 +614,7 @@ GET {{baseUrl}}/skinScan/photos
 
 ```
 GET {{baseUrl}}/skinScan/photos
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 ```
 
 **Ожидаемый результат:**
@@ -611,7 +636,7 @@ Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
 
 ```
 POST {{baseUrl}}/skinScan/photos/upload
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 Content-Type: multipart/form-data
 
 file = <png 1x1>
@@ -636,7 +661,7 @@ file = <png 1x1>
 
 ```
 POST {{baseUrl}}/skinScan/photos/upload
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 Content-Type: multipart/form-data
 
 file = document_<uuid>.txt
@@ -723,7 +748,7 @@ X-Forwarded-For: 10.<случайный>.<случайный>.<случайны�
 
 ```
 PUT {{baseUrl}}/skinScan/user/update
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 Content-Type: application/json
 
 {
@@ -771,18 +796,21 @@ Content-Type: application/json
 ## 3. Обновление данных с неверным паролем
 
 **Описание:**
-Обновление данных с неверным паролем `PUT /skinScan/user/update` возвращает 401.
+Обновление данных с валидным токеном, но неверным паролем в теле `PUT /skinScan/user/update` возвращает 401.
+
+Пароль в теле остаётся обязательной частью контракта: даже при валидном JWT сервер сверяет
+его с хешем в БД, чтобы подтвердить личность при изменении контактных данных.
 
 **Предусловия:**
-Пользователь зарегистрирован.
+Пользователь зарегистрирован и залогинен (известен `accessToken`).
 
 **Шаги:**
 
-1. Попытаться обновить данные, передав неверный пароль и в Basic-авторизации, и в теле:
+1. Попытаться обновить данные, передав валидный токен и неверный пароль в теле:
 
 ```
 PUT {{baseUrl}}/skinScan/user/update
-Authorization: Basic <base64>(user_<uuid>:wrong-password)
+Authorization: Bearer <accessToken>
 Content-Type: application/json
 
 {
@@ -794,7 +822,40 @@ Content-Type: application/json
 ```
 
 **Ожидаемый результат:**
-401 Unauthorized. Данные не изменены.
+401 Unauthorized. Тело — сообщение `Неверный пароль`. Данные не изменены.
+
+---
+
+## 3.1. Обновление данных с невалидным токеном
+
+**Описание:**
+Обновление данных с невалидным Bearer-токеном `PUT /skinScan/user/update` возвращает 401.
+
+**Предусловия:**
+Пользователь зарегистрирован.
+
+**Шаги:**
+
+1. Попытаться обновить данные, передав в заголовке Authorization невалидный токен:
+
+```
+PUT {{baseUrl}}/skinScan/user/update
+Authorization: Bearer invalid-token
+Content-Type: application/json
+
+{
+  "login": "user_<uuid>",
+  "password": "password_<uuid>",
+  "email": "user_<uuid>@skin-scan.ru",
+  "phone": "+78005553535"
+}
+```
+
+**Ожидаемый результат:**
+401 Unauthorized. Тело — сообщение о необходимости аутентификации. Данные не изменены.
+
+**Отличие от кейса 3:** отказ происходит на уровне фильтра безопасности, до контроллера.
+Поэтому тело ответа другое, и оба кейса проверяют разные ветки кода.
 
 ---
 
@@ -812,7 +873,7 @@ Content-Type: application/json
 
 ```
 PUT {{baseUrl}}/skinScan/user/update/{login}
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 Content-Type: application/json
 
 {
@@ -824,7 +885,13 @@ Content-Type: application/json
 2. Войти, используя новый пароль:
 
 ```
-GET {{baseUrl}}/skinScan/login?auth=<base64>(user_<uuid>:new_<uuid>_password)
+GET {{baseUrl}}/skinScan/login
+Content-Type: application/json
+
+{
+  "login": "user_<uuid>",
+  "pass": "new_<uuid>_password"
+}
 ```
 
 **Ожидаемый результат:**
@@ -846,7 +913,7 @@ GET {{baseUrl}}/skinScan/login?auth=<base64>(user_<uuid>:new_<uuid>_password)
 
 ```
 PUT {{baseUrl}}/skinScan/user/update/{login}
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 Content-Type: application/json
 
 {
@@ -858,7 +925,13 @@ Content-Type: application/json
 2. Попытаться войти со старым паролем:
 
 ```
-GET {{baseUrl}}/skinScan/login?auth=<base64>(user_<uuid>:password_<uuid>)
+GET {{baseUrl}}/skinScan/login
+Content-Type: application/json
+
+{
+  "login": "user_<uuid>",
+  "pass": "password_<uuid>"
+}
 ```
 
 **Ожидаемый результат:**
@@ -880,7 +953,7 @@ GET {{baseUrl}}/skinScan/login?auth=<base64>(user_<uuid>:password_<uuid>)
 
 ```
 PUT {{baseUrl}}/skinScan/user/update/{login}
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 Content-Type: application/json
 
 {
@@ -908,7 +981,7 @@ Content-Type: application/json
 
 ```
 PUT {{baseUrl}}/skinScan/user/update/{login}
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 Content-Type: application/json
 
 {
@@ -936,7 +1009,7 @@ Content-Type: application/json
 
 ```
 PUT {{baseUrl}}/skinScan/user/update
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 Content-Type: application/json
 
 {
@@ -966,7 +1039,7 @@ Content-Type: application/json
 
 ```
 PUT {{baseUrl}}/skinScan/user/update/<случайный-login>
-Authorization: Basic <base64>(<случайный>:<случайный>)
+Authorization: Bearer <accessToken>
 Content-Type: application/json
 
 {
@@ -994,7 +1067,7 @@ Content-Type: application/json
 
 ```
 PUT {{baseUrl}}/skinScan/user/update
-Authorization: Basic <base64>(user_<uuid>:password_<uuid>)
+Authorization: Bearer <accessToken>
 Content-Type: application/json
 
 {
@@ -1010,63 +1083,200 @@ Content-Type: application/json
 
 ---
 
-## 11. Пользователь A не может сменить пароль пользователя B
+## 11. Пользователь не может сменить пароль постороннего пользователя
 
 **Описание:**
-Пользователь «A» может сменить пароль пользователя «B» `PUT /skinScan/user/update/{login}` возвращает 200.
+Попытка текущего пользователя (`user`) сменить пароль постороннего пользователя (`stranger`)
+`PUT /skinScan/user/update/{login}` возвращает 401: смена пароля допустима только для самого себя.
 
 **Предусловия:**
-Зарегистрировать пользователя A:
+Зарегистрировать и залогинить текущего пользователя `user` (нужен `accessToken_user`):
 
 ```
 POST {{baseUrl}}/skinScan/register
 Content-Type: application/json
 
 {
-  "login": "user_<uuid_A>",
-  "password": "password_<uuid_A>",
-  "email": "user_<uuid_A>@skin-scan.ru",
+  "login": "user_<uuid_user>",
+  "password": "password_<uuid_user>",
+  "email": "user_<uuid_user>@skin-scan.ru",
   "phone": "+78005553535"
 }
 ```
 
-Зарегистрировать пользователя B:
+```
+GET {{baseUrl}}/skinScan/login
+Content-Type: application/json
+
+{
+  "login": "user_<uuid_user>",
+  "pass": "password_<uuid_user>"
+}
+```
+
+Зарегистрировать постороннего пользователя `stranger` (известен его верный пароль `password_<uuid_stranger>`):
 
 ```
 POST {{baseUrl}}/skinScan/register
 Content-Type: application/json
 
 {
-  "login": "user_<uuid_B>",
-  "password": "password_<uuid_B>",
-  "email": "user_<uuid_B>@skin-scan.ru",
+  "login": "user_<uuid_stranger>",
+  "password": "password_<uuid_stranger>",
+  "email": "user_<uuid_stranger>@skin-scan.ru",
   "phone": "+78005553535"
 }
 ```
 
 **Шаги:**
 
-1. От имени A попытаться сменить пароль пользователя B: в заголовке Authorization — данные A, в URL — логин B:
+1. От имени `user` попытаться сменить пароль `stranger`: в заголовке Authorization — токен `user`,
+   в URL — логин `stranger`, в теле — **верный** старый пароль `stranger`:
 
 ```
-PUT {{baseUrl}}/skinScan/user/update/{user_<uuid_B>}
-Authorization: Basic <base64>(user_<uuid_A>:password_<uuid_A>)
+PUT {{baseUrl}}/skinScan/user/update/{user_<uuid_stranger>}
+Authorization: Bearer <accessToken_user>
 Content-Type: application/json
 
 {
-  "oldPassword": "password_<uuid_B>",
+  "oldPassword": "password_<uuid_stranger>",
   "newPassword": "new_<uuid>_password"
 }
 ```
 
-2. Проверить, что пароль B не изменился — попробовать войти от имени B с новым паролем:
+2. Проверить, что пароль `stranger` не изменился — попробовать войти от имени `stranger` со старым паролем:
 
 ```
-GET {{baseUrl}}/skinScan/login?auth=<base64>(user_<uuid_B>:new_<uuid>_password)
+GET {{baseUrl}}/skinScan/login
+Content-Type: application/json
+
+{
+  "login": "user_<uuid_stranger>",
+  "pass": "password_<uuid_stranger>"
+}
+```
+
+3. Попробовать войти от имени `stranger` с новым паролем:
+
+```
+GET {{baseUrl}}/skinScan/login
+Content-Type: application/json
+
+{
+  "login": "user_<uuid_stranger>",
+  "pass": "new_<uuid>_password"
+}
 ```
 
 **Ожидаемый результат:**
-403 Forbidden (или 401). Смена пароля допустима только для самого себя; пароль B остаётся неизменным.
+Шаг 1 — 401 Unauthorized, тело — `Нет прав для изменения пароля другого пользователя`.
+Шаг 2 — 200 OK (старый пароль действует).
+Шаг 3 — 401 Unauthorized (новый пароль не установлен).
 
-**Фактический результат:**
-200 OK, тело — UUID пользователя B. Пароль пользователя B изменён — вход B с новым паролем успешен, со старым — 401.
+**Примечание:** в теле передаётся верный старый пароль `stranger`, поэтому отказ вызван именно
+проверкой владельца, а не неверным паролем. Сервер сверяет владельца раньше пароля:
+`UserControllerImpl.updatePassword` сравнивает `loginUserId` из токена с владельцем логина
+из URL и только потом вызывает `UserService.updatePassword`.
+
+---
+
+# DbUserChecksTest
+
+## 1. После регистрации пароль хранится в БД как BCrypt-хеш
+
+**Описание:**
+После регистрации пароль хранится в БД как BCrypt-хеш, а не открытым текстом.
+
+**Предусловия:**
+Сервер запущен; доступ к БД (параметры `db.url` / `db.user` / `db.password`).
+
+**Шаги:**
+
+1. Зарегистрировать нового пользователя через API:
+
+```
+POST {{baseUrl}}/skinScan/register
+Content-Type: application/json
+{
+  "login": "user_<uuid>",
+  "password": "password_<uuid>",
+  "email": "user_<uuid>@skin-scan.ru",
+  "phone": "+78005553535"
+}
+```
+
+2. Прочитать запись пользователя из БД:
+
+```
+SELECT password, email, phone FROM users WHERE login = ?
+```
+
+**Ожидаемый результат:**
+Строка найдена. `password` не равен переданному паролю; соответствует BCrypt-формату (`^\$2[aby]\$\d{2}\$.{53}$`, длина 60). `email` и `phone` сохранены как переданы.
+
+---
+
+## 2. После смены пароля хеш в БД обновляется
+
+**Описание:**
+После смены пароля хеш пароля в БД обновляется.
+
+**Предусловия:**
+Пользователь зарегистрирован; доступ к БД.
+
+**Шаги:**
+
+1. Прочитать текущий хеш пароля:
+
+```
+SELECT password FROM users WHERE login = ?
+```
+
+2. Сменить пароль через API:
+
+```
+PUT {{baseUrl}}/skinScan/user/update/{login}
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+{
+  "oldPassword": "password_<uuid>",
+  "newPassword": "new_<uuid>_password"
+}
+```
+
+3. Снова прочитать хеш пароля из БД.
+
+**Ожидаемый результат:**
+Смена — 200 OK. Новый хеш не равен старому; оба соответствуют BCrypt-формату.
+
+---
+
+# DbPhotoChecksTest
+
+## 1. После загрузки фото статус в БД доходит до «Анализ завершен»
+
+**Описание:**
+После загрузки фото статус в БД доходит до «Анализ завершен».
+
+**Предусловия:**
+Пользователь зарегистрирован; сервер запущен; доступ к БД.
+
+**Шаги:**
+
+1. Загрузить фото:
+
+```
+POST {{baseUrl}}/skinScan/photos/upload
+Authorization: Bearer <accessToken>
+Content-Type: multipart/form-data
+file = <png 1x1>
+```
+
+2. Опросом (polling, до 60 с) читать статус фото из БД, пока он не станет «Анализ завершен»:
+
+```
+SELECT status FROM photo WHERE id = ?
+```
+
+**Ожидаемый результат:**
+Загрузка — 202 (тело — UUID). Финальный статус в БД — `Анализ завершен` (в БД хранятся русские подписи статусов).
